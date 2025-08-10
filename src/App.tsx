@@ -5,6 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Dashboard from "./pages/Dashboard";
+import Portfolio from "./pages/Portfolio";
+import Transactions from "./pages/Transactions";
+import Settings from "./pages/Settings";
+import AppShell from "@/components/layout/AppShell";
 
 const queryClient = new QueryClient();
 
@@ -14,10 +21,18 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {/* Layout */}
+        {/* header */}
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<AppShell><Index /></AppShell>} />
+          <Route path="/login" element={<AppShell><Login /></AppShell>} />
+          <Route path="/cadastro" element={<AppShell><Register /></AppShell>} />
+          <Route path="/dashboard" element={<AppShell><Dashboard /></AppShell>} />
+          <Route path="/carteira" element={<AppShell><Portfolio /></AppShell>} />
+          <Route path="/transacoes" element={<AppShell><Transactions /></AppShell>} />
+          <Route path="/configuracoes" element={<AppShell><Settings /></AppShell>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<AppShell><NotFound /></AppShell>} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

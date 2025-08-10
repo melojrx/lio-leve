@@ -1,12 +1,103 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Button } from "@/components/ui/button";
+import { ArrowRight, LineChart, Layers, Wallet, Shield } from "lucide-react";
+import SEO from "@/components/SEO";
+import { Link } from "react-router-dom";
+import { useRef } from "react";
 
 const Index = () => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const handleMove = (e: React.MouseEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    el.style.setProperty("--x", `${x}px`);
+    el.style.setProperty("--y", `${y}px`);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div onMouseMove={handleMove} ref={ref} className="relative min-h-screen bg-background">
+      <SEO
+        title="Orion Invest — Consolide e acompanhe seus investimentos"
+        description="Dashboard de investimentos com carteira consolidada, transações e cotações em tempo real."
+        canonical="/"
+      />
+      {/* Signature moment: pointer-reactive light field */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 opacity-60"
+        style={{
+          background:
+            "radial-gradient(600px circle at var(--x, 50%) var(--y, 30%), hsl(var(--primary)/0.18), transparent 40%)",
+        }}
+      />
+
+      <section className="container pt-20 pb-16 md:pt-28 md:pb-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-4xl md:text-6xl font-semibold tracking-tight">
+            Sua carteira, clareza total.
+          </h1>
+          <p className="mt-4 text-lg md:text-xl text-muted-foreground">
+            Consolide investimentos, acompanhe rentabilidade e tome decisões com
+            dados em tempo real.
+          </p>
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <Link to="/cadastro">
+              <Button variant="hero" radius="pill" size="xl">
+                Começar grátis
+                <ArrowRight className="ml-1" />
+              </Button>
+            </Link>
+            <Link to="/dashboard">
+              <Button variant="outline" size="xl">Ver demo</Button>
+            </Link>
+          </div>
+          <div className="mt-10 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+            <Shield className="h-4 w-4" /> Dados protegidos e criptografados
+          </div>
+        </div>
+      </section>
+
+      <section className="container grid gap-6 md:grid-cols-3 md:gap-8">
+        {[
+          {
+            icon: <LineChart />, title: "Dashboard consolidado", desc: "Patrimônio, rentabilidade e variação diária com filtros 1D, 1M, 1A."
+          },
+          {
+            icon: <Layers />, title: "Cadastro de ativos", desc: "Adicione transações com validação de ticker e preço médio automático."
+          },
+          {
+            icon: <Wallet />, title: "Carteira detalhada", desc: "Veja posição por ativo, tipo e setor com gráficos de composição."
+          },
+        ].map((f, i) => (
+          <article key={i} className="rounded-lg border bg-card p-6 shadow-sm transition-transform will-change-transform hover:-translate-y-0.5">
+            <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+              {f.icon}
+            </div>
+            <h3 className="text-lg font-semibold">{f.title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="container mt-16">
+        <div className="rounded-xl border p-6 md:p-10 bg-gradient-to-br from-primary/5 via-accent/10 to-transparent">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight">Pronto para investir com confiança?</h2>
+              <p className="mt-2 text-muted-foreground">Crie sua conta em minutos e importe suas transações.</p>
+            </div>
+            <div className="flex gap-3">
+              <Link to="/cadastro"><Button size="lg" radius="pill">Criar conta</Button></Link>
+              <Link to="/login"><Button variant="outline" size="lg" radius="pill">Entrar</Button></Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="h-20" />
     </div>
   );
 };
