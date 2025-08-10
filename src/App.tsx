@@ -12,6 +12,8 @@ import Portfolio from "./pages/Portfolio";
 import Transactions from "./pages/Transactions";
 import Settings from "./pages/Settings";
 import AppShell from "@/components/layout/AppShell";
+import { AuthProvider } from "@/contexts/AuthContext";
+import RequireAuth from "@/components/auth/RequireAuth";
 
 const queryClient = new QueryClient();
 
@@ -20,21 +22,51 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        {/* Layout */}
-        {/* header */}
-        <Routes>
-          <Route path="/" element={<AppShell><Index /></AppShell>} />
-          <Route path="/login" element={<AppShell><Login /></AppShell>} />
-          <Route path="/cadastro" element={<AppShell><Register /></AppShell>} />
-          <Route path="/dashboard" element={<AppShell><Dashboard /></AppShell>} />
-          <Route path="/carteira" element={<AppShell><Portfolio /></AppShell>} />
-          <Route path="/transacoes" element={<AppShell><Transactions /></AppShell>} />
-          <Route path="/configuracoes" element={<AppShell><Settings /></AppShell>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<AppShell><NotFound /></AppShell>} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          {/* Layout */}
+          {/* header */}
+          <Routes>
+            <Route path="/" element={<AppShell><Index /></AppShell>} />
+            <Route path="/login" element={<AppShell><Login /></AppShell>} />
+            <Route path="/cadastro" element={<AppShell><Register /></AppShell>} />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <AppShell><Dashboard /></AppShell>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/carteira"
+              element={
+                <RequireAuth>
+                  <AppShell><Portfolio /></AppShell>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/transacoes"
+              element={
+                <RequireAuth>
+                  <AppShell><Transactions /></AppShell>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/configuracoes"
+              element={
+                <RequireAuth>
+                  <AppShell><Settings /></AppShell>
+                </RequireAuth>
+              }
+            />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<AppShell><NotFound /></AppShell>} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

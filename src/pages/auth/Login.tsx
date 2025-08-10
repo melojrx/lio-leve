@@ -3,15 +3,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
-  const onSubmit = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate("/dashboard", { replace: true });
+  }, [user, navigate]);
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast({
-      title: "Em breve",
-      description: "Autenticação será conectada ao Supabase nesta etapa.",
-    });
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
+
+    if (!email || !password) return;
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Falha ao entrar", description: error.message });
+      return;
+    }
+
+    toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
+    navigate("/dashboard", { replace: true });
   };
 
   return (
@@ -24,13 +49,13 @@ const Login = () => {
           <form className="mt-6 grid gap-4" onSubmit={onSubmit}>
             <div className="grid gap-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" placeholder="voce@email.com" required />
+              <Input id="email" name="email" type="email" placeholder="voce@email.com" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" placeholder="••••••••" required />
+              <Input id="password" name="password" type="password" placeholder="••••••••" required />
             </div>
-            <Button type="submit" className="mt-2">Entrar</Button>
+            <Button type="submit" className="mt-2" disabled={loading}>{loading ? "Entrando..." : "Entrar"}</Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground">
             Não possui conta? <Link className="text-primary hover:underline" to="/cadastro">Cadastre-se</Link>

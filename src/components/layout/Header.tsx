@@ -1,19 +1,24 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import { LineChart } from "lucide-react";
-const Header = () => {
-  const [isAuthed, setIsAuthed] = useState(false);
-  const navigate = useNavigate();
-  useEffect(() => {
-    // TODO: Integrar autenticação (Supabase). Placeholder mantém usuário deslogado.
-    setIsAuthed(false);
-  }, []);
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
-  const handleSignOut = async () => {
-    setIsAuthed(false);
-    navigate("/");
-  };
+const Header = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = useCallback(async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({ title: "Erro ao sair", description: error.message });
+      return;
+    }
+    toast({ title: "Até mais!", description: "Sessão encerrada." });
+    navigate("/", { replace: true });
+  }, [navigate]);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,7 +34,7 @@ const Header = () => {
           <Link to="/configuracoes" className="hover:text-primary transition-colors">Configurações</Link>
         </nav>
         <div className="flex items-center gap-2">
-          {!isAuthed ? (
+          {!user ? (
             <div className="flex items-center gap-2">
               <Link to="/login"><Button variant="soft">Entrar</Button></Link>
               <Link to="/cadastro"><Button variant="hero" radius="pill">Criar conta</Button></Link>
