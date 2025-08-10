@@ -20,7 +20,7 @@ const Index = () => {
   return (
     <div onMouseMove={handleMove} ref={ref} className="relative min-h-screen bg-background">
       <SEO
-        title="Orion Invest — Consolide e acompanhe seus investimentos"
+        title="investorion.com.br — Consolide e acompanhe seus investimentos"
         description="Dashboard de investimentos com carteira consolidada, transações e cotações em tempo real."
         canonical="/"
       />

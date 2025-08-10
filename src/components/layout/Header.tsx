@@ -20,7 +20,7 @@ const Header = () => {
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-primary/15 ring-1 ring-primary/25" />
-          <span className="font-semibold tracking-tight">Orion Invest</span>
+          <span className="font-semibold tracking-tight">investorion.com.br</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm">
           <Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>

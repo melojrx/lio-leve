@@ -16,7 +16,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen">
-      <SEO title="Criar conta — Orion Invest" description="Cadastre-se na Orion Invest." />
+      <SEO title="Criar conta — investorion.com.br" description="Cadastre-se na investorion.com.br." />
       <section className="container py-16">
         <div className="mx-auto w-full max-w-md rounded-xl border bg-card p-6 shadow-sm">
           <h1 className="text-2xl font-semibold">Criar conta</h1>

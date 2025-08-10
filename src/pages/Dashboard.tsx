@@ -36,7 +36,7 @@ const pieData = [
 const Dashboard = () => {
   return (
     <div className="min-h-screen">
-      <SEO title="Dashboard — Orion Invest" description="Resumo do seu patrimônio e desempenho." />
+      <SEO title="Dashboard — investorion.com.br" description="Resumo do seu patrimônio e desempenho." />
       <section className="container py-10 md:py-14">
         <div className="grid gap-6 md:grid-cols-3">
           <Card className="md:col-span-2">

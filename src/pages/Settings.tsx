@@ -3,7 +3,7 @@ import SEO from "@/components/SEO";
 const Settings = () => {
   return (
     <div className="min-h-screen">
-      <SEO title="Configurações — Orion Invest" description="Preferências da conta e suporte." />
+      <SEO title="Configurações — investorion.com.br" description="Preferências da conta e suporte." />
       <section className="container py-10 md:py-14">
         <h1 className="text-2xl font-semibold">Configurações</h1>
         <div className="mt-6 rounded-lg border p-6">

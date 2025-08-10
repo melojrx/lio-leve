@@ -16,7 +16,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen">
-      <SEO title="Entrar — Orion Invest" description="Acesse sua conta Orion Invest." />
+      <SEO title="Entrar — investorion.com.br" description="Acesse sua conta investorion.com.br." />
       <section className="container py-16">
         <div className="mx-auto w-full max-w-md rounded-xl border bg-card p-6 shadow-sm">
           <h1 className="text-2xl font-semibold">Entrar</h1>
