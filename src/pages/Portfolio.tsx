@@ -1,5 +1,20 @@
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -8,8 +23,20 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ChevronRight, Plus, Wallet } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import {
+  CalendarIcon,
+  CheckCircle2,
+  ChevronRight,
+  Loader2,
+  Plus,
+  Search,
+  Wallet,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
+// Categorias oferecidas no estado vazio
 const categories = [
   "Ações, Stocks e ETF",
   "BDRs",
@@ -24,16 +51,119 @@ const categories = [
   "Previdência",
   "Renda Fixa Prefixada",
   "Renda Fixa Pós-fixada",
-];
+] as const;
+
+// Tipos auxiliares
+type Category = (typeof categories)[number];
+interface Bank {
+  ispb: string;
+  name: string;
+  code: number | null;
+  fullName: string;
+}
+
+interface Asset {
+  id: string;
+  type: "POUPANÇA";
+  institution: string;
+  date: string; // ISO
+  amount: number; // em BRL
+}
+
+function formatCurrencyBRL(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function parseMaskedCurrencyToNumber(masked: string) {
+  const digits = masked.replace(/\D/g, "");
+  const asNumber = Number(digits) / 100;
+  return asNumber;
+}
 
 const Portfolio = () => {
+  // Lista local de ativos (apenas demonstração)
+  const [assets, setAssets] = useState<Asset[]>([]);
+
+  // Sheet state
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  // Wizard Poupança
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [loadingBanks, setLoadingBanks] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
+
+  const [date, setDate] = useState<Date | undefined>();
+  const [amountMask, setAmountMask] = useState<string>("");
+  const amount = useMemo(() => parseMaskedCurrencyToNumber(amountMask || "0"), [amountMask]);
+
+  const [showFutureConfirm, setShowFutureConfirm] = useState(false);
+
+  // Carrega bancos uma única vez quando a categoria Poupança é aberta na etapa 1
+  useEffect(() => {
+    if (selectedCategory === "Poupança" && step === 1 && banks.length === 0 && !loadingBanks) {
+      setLoadingBanks(true);
+      fetch("https://brasilapi.com.br/api/banks/v1")
+        .then((r) => r.json())
+        .then((data: Bank[]) => setBanks(data))
+        .catch(() => setBanks([]))
+        .finally(() => setLoadingBanks(false));
+    }
+  }, [selectedCategory, step, banks.length, loadingBanks]);
+
+  const filteredBanks = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [] as Bank[];
+    return banks.filter((b) => (b.name || b.fullName)?.toLowerCase().includes(q));
+  }, [banks, query]);
+
+  function resetWizard() {
+    setStep(1);
+    setQuery("");
+    setSelectedBank(null);
+    setDate(undefined);
+    setAmountMask("");
+    setShowFutureConfirm(false);
+  }
+
+  function handleCategoryClick(c: Category) {
+    setSelectedCategory(c);
+    if (c === "Poupança") {
+      resetWizard();
+    }
+  }
+
+  function handleNextFromStep2() {
+    if (!date) return;
+    const today = new Date();
+    const isFuture = date > new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (isFuture) {
+      setShowFutureConfirm(true);
+    } else {
+      finalizeCreation();
+    }
+  }
+
+  function finalizeCreation() {
+    const newAsset: Asset = {
+      id: crypto.randomUUID(),
+      type: "POUPANÇA",
+      institution: selectedBank?.fullName || selectedBank?.name || "",
+      date: (date || new Date()).toISOString(),
+      amount,
+    };
+    setAssets((prev) => [newAsset, ...prev]);
+    setStep(3);
+  }
+
   return (
     <div className="min-h-screen">
       <SEO title="Carteira — investorion.com.br" description="Lista detalhada de ativos e posições." />
 
       <Sheet>
         <section className="container py-10 md:py-14">
-          <header className="flex items-center justify-between">
+          <header className="flex items-center justify-between gap-4">
             <h1 className="text-2xl font-semibold">Carteira</h1>
             <SheetTrigger asChild>
               <Button size="sm">
@@ -43,49 +173,301 @@ const Portfolio = () => {
             </SheetTrigger>
           </header>
 
-          {/* Estado vazio */}
-          <div className="mt-10 flex flex-col items-center justify-center rounded-lg border p-10 text-center">
-            <div className="grid place-items-center h-12 w-12 rounded-full border bg-muted">
-              <Wallet className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h2 className="mt-4 text-lg font-medium">Você ainda não cadastrou nenhum ativo.</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Adicione seu primeiro ativo para começar a acompanhar sua carteira.
-            </p>
-            <div className="mt-6">
-              <SheetTrigger asChild>
-                <Button variant="secondary">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Adicionar ativo
-                </Button>
-              </SheetTrigger>
-            </div>
-          </div>
-
-          {/* Painel lateral com categorias */}
-          <SheetContent side="right" className="w-full sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>Adicionar novo ativo</SheetTitle>
-              <SheetDescription>
-                Escolha uma categoria para cadastrar manualmente.
-              </SheetDescription>
-            </SheetHeader>
-
-            <div className="mt-4 space-y-2">
-              {categories.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className="w-full flex items-center justify-between rounded-lg border p-3 text-left hover:bg-muted transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span aria-hidden className="h-8 w-1 rounded-full bg-primary" />
-                    <span className="font-medium">{c}</span>
+          {assets.length > 0 ? (
+            <div className="mt-8 space-y-4">
+              {assets.map((a) => (
+                <div key={a.id} className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm text-muted-foreground">{a.type}</div>
+                      <div className="font-medium">{a.institution}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm">{format(new Date(a.date), "dd.MM.yyyy")}</div>
+                      <div className="font-semibold">{formatCurrencyBRL(a.amount)}</div>
+                    </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </button>
+                </div>
               ))}
             </div>
+          ) : (
+            // Estado vazio
+            <div className="mt-10 flex flex-col items-center justify-center rounded-lg border p-10 text-center">
+              <div className="grid place-items-center h-12 w-12 rounded-full border bg-muted">
+                <Wallet className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h2 className="mt-4 text-lg font-medium">Você ainda não cadastrou nenhum ativo.</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Adicione seu primeiro ativo para começar a acompanhar sua carteira.
+              </p>
+              <div className="mt-6">
+                <SheetTrigger asChild>
+                  <Button variant="secondary">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar ativo
+                  </Button>
+                </SheetTrigger>
+              </div>
+            </div>
+          )}
+
+          {/* Painel lateral */}
+          <SheetContent side="right" className="w-full sm:max-w-md">
+            {selectedCategory == null ? (
+              <>
+                <SheetHeader>
+                  <SheetTitle>Adicionar novo ativo</SheetTitle>
+                  <SheetDescription>
+                    Escolha uma categoria para cadastrar manualmente.
+                  </SheetDescription>
+                </SheetHeader>
+
+                <div className="mt-4 space-y-2">
+                  {categories.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => handleCategoryClick(c)}
+                      className="w-full flex items-center justify-between rounded-lg border p-3 text-left hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span aria-hidden className="h-8 w-1 rounded-full bg-primary" />
+                        <span className="font-medium">{c}</span>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : selectedCategory === "Poupança" ? (
+              <div className="flex h-full flex-col">
+                <SheetHeader>
+                  <SheetTitle>Adicionar Poupança</SheetTitle>
+                  <SheetDescription>
+                    {step === 1 && "Busque e selecione a instituição"}
+                    {step === 2 && "Informe a data e o valor aplicado"}
+                    {step === 3 && "Ativo adicionado com sucesso"}
+                  </SheetDescription>
+                </SheetHeader>
+
+                {/* Stepper simple indicator */}
+                <div className="mt-4 flex gap-2">
+                  {[1, 2, 3].map((s) => (
+                    <div
+                      key={s}
+                      className={cn(
+                        "h-1 flex-1 rounded-full bg-muted",
+                        step >= (s as 1 | 2 | 3) && "bg-primary"
+                      )}
+                    />
+                  ))}
+                </div>
+
+                {/* Conteúdo das etapas */}
+                <div className="mt-6 flex-1 overflow-auto">
+                  {step === 1 && (
+                    <div className="space-y-4">
+                      <label className="text-sm font-medium">Buscar nova instituição</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          placeholder="Digite o nome da instituição"
+                          className="pl-9"
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                        />
+                      </div>
+
+                      {loadingBanks ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" /> Carregando instituições...
+                        </div>
+                      ) : query ? (
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">Resultados da pesquisa:</div>
+                          {filteredBanks.length === 0 ? (
+                            <div className="rounded-lg border p-3 text-sm text-muted-foreground">
+                              Nenhuma instituição encontrada.
+                            </div>
+                          ) : (
+                            filteredBanks.slice(0, 10).map((b) => (
+                              <button
+                                key={b.ispb + (b.code ?? "")}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBank(b);
+                                  setStep(2);
+                                }}
+                                className="w-full rounded-lg border p-3 text-left hover:bg-muted"
+                              >
+                                {b.fullName || b.name}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+                          Escolha uma instituição financeira usando o campo de busca acima.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {step === 2 && (
+                    <div className="space-y-6">
+                      <div className="rounded-lg border p-4">
+                        <div className="text-sm font-medium">Data e valor do investimento</div>
+                        <p className="text-sm text-muted-foreground">Agora informe a data e o valor que você aplicou.</p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Data de compra</label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !date && "text-muted-foreground"
+                                )}
+                              >
+                                {date ? format(date, "dd.MM.yyyy") : "DD.MM.AAAA"}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={setDate}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Valor aplicado</label>
+                          <Input
+                            inputMode="numeric"
+                            value={amountMask}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const number = parseMaskedCurrencyToNumber(value);
+                              setAmountMask(
+                                number ? number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : ""
+                              );
+                            }}
+                            placeholder="R$ 0,00"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 3 && (
+                    <div className="flex h-full flex-col items-center justify-center">
+                      <CheckCircle2 className="h-12 w-12 text-primary" />
+                      <h3 className="mt-4 text-lg font-semibold">Adicionado com sucesso</h3>
+                      <p className="text-sm text-muted-foreground">O ativo foi adicionado à sua carteira.</p>
+
+                      <div className="mt-6 grid w-full gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedCategory(null);
+                          }}
+                        >
+                          Adicionar um novo ativo
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            resetWizard();
+                            setSelectedCategory("Poupança");
+                            setStep(1);
+                          }}
+                          variant="outline"
+                        >
+                          Adicionar uma nova Poupança
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer de navegação */}
+                {step !== 3 && (
+                  <div className="mt-6 flex items-center justify-between border-t pt-4">
+                    <div className="flex gap-2">
+                      {step > 1 && (
+                        <Button
+                          variant="outline"
+                          onClick={() => setStep((s) => (s === 2 ? 1 : 2))}
+                        >
+                          Voltar
+                        </Button>
+                      )}
+                      <Button variant="ghost" onClick={() => setSelectedCategory(null)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                    {step === 1 ? (
+                      <Button disabled={!selectedBank} onClick={() => setStep(2)}>
+                        Avançar
+                      </Button>
+                    ) : (
+                      <Button disabled={!date || amount <= 0} onClick={handleNextFromStep2}>
+                        Avançar
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Diálogo de confirmação de data futura */}
+                <Dialog open={showFutureConfirm} onOpenChange={setShowFutureConfirm}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Confirme o cadastro de aplicação em data futura!</DialogTitle>
+                      <DialogDescription>
+                        Você está prestes a adicionar uma movimentação em uma data futura. Seu ativo
+                        ficará em "Aguardando Precificação" até que tenhamos os dados necessários.
+                        Deseja continuar assim mesmo?
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowFutureConfirm(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowFutureConfirm(false);
+                          finalizeCreation();
+                        }}
+                      >
+                        Confirmar
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            ) : (
+              // Placeholder para outras categorias (não implementadas ainda)
+              <>
+                <SheetHeader>
+                  <SheetTitle>{selectedCategory}</SheetTitle>
+                  <SheetDescription>
+                    Em breve você poderá cadastrar ativos desta categoria.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6">
+                  <Button variant="outline" onClick={() => setSelectedCategory(null)}>
+                    Voltar às categorias
+                  </Button>
+                </div>
+              </>
+            )}
           </SheetContent>
         </section>
       </Sheet>
