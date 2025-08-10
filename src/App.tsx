@@ -14,12 +14,14 @@ import Settings from "./pages/Settings";
 import AppShell from "@/components/layout/AppShell";
 import { AuthProvider } from "@/contexts/AuthContext";
 import RequireAuth from "@/components/auth/RequireAuth";
+import { ThemeProvider } from "next-themes";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    {/* TooltipProvider removido temporariamente */}
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      {/* TooltipProvider removido temporariamente */}
       <Toaster />
       <Sonner />
       <AuthProvider>
@@ -67,7 +69,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </AuthProvider>
-    
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
