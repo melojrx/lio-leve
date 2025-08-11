@@ -79,19 +79,20 @@ export default function AssetDetails() {
       </div>
     );
   }
+const typeLabel = asset.type === "POUPANÇA" ? "Poupança" : asset.type === "CONTA_CORRENTE" ? "Conta Corrente" : asset.type;
 
-  return (
-    <div className="min-h-screen">
-      <SEO
-        title={`Gerenciar Ativo — ${asset.institution}`}
-        description={`Gerencie movimentações do ativo de poupança em ${asset.institution}.`}
-        canonical={`/carteira/ativo/${asset.id}`}
-      />
+return (
+  <div className="min-h-screen">
+    <SEO
+      title={`Gerenciar Ativo — ${asset.institution}`}
+      description={`Gerencie movimentações do ativo de ${typeLabel.toLowerCase()} em ${asset.institution}.`}
+      canonical={`/carteira/ativo/${asset.id}`}
+    />
       <main className="container py-8">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Poupança</h1>
+            <h1 className="text-2xl font-semibold">{typeLabel}</h1>
             <p className="text-sm text-muted-foreground">{asset.institution}</p>
           </div>
           <div className="flex items-center gap-2">

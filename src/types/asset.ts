@@ -1,4 +1,4 @@
-export type AssetType = "POUPANÇA";
+export type AssetType = "POUPANÇA" | "CONTA_CORRENTE";
 
 export interface Asset {
   id: string;
@@ -6,6 +6,7 @@ export interface Asset {
   institution: string; // Bank full name
   date: string; // ISO date of initial application
   amount: number; // Initial applied amount (BRL)
+  cdiPercent?: number; // Optional: % over CDI (for Conta Corrente)
 }
 
 export type MovementKind = "APLICACAO" | "RESGATE" | "TRANSFERENCIA";

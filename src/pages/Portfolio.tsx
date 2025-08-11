@@ -77,6 +77,12 @@ function parseMaskedCurrencyToNumber(masked: string) {
   return asNumber;
 }
 
+function parseMaskedPercentToNumber(masked: string) {
+  const digits = masked.replace(/\D/g, "");
+  const asNumber = Number(digits) / 100;
+  return asNumber;
+}
+
 const Portfolio = () => {
   // Lista local de ativos (apenas demonstração)
   const [assets, setAssets] = useState<Asset[]>(() => getAssets());
@@ -92,23 +98,26 @@ const Portfolio = () => {
   const [query, setQuery] = useState("");
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
 
-  const [date, setDate] = useState<Date | undefined>();
-  const [amountMask, setAmountMask] = useState<string>("");
-  const amount = useMemo(() => parseMaskedCurrencyToNumber(amountMask || "0"), [amountMask]);
+const [date, setDate] = useState<Date | undefined>();
+const [amountMask, setAmountMask] = useState<string>("");
+const amount = useMemo(() => parseMaskedCurrencyToNumber(amountMask || "0"), [amountMask]);
+const [cdiMask, setCdiMask] = useState<string>("");
+const cdiPercent = useMemo(() => parseMaskedPercentToNumber(cdiMask || "0"), [cdiMask]);
 
   const [showFutureConfirm, setShowFutureConfirm] = useState(false);
 
-  // Carrega bancos uma única vez quando a categoria Poupança é aberta na etapa 1
-  useEffect(() => {
-    if (selectedCategory === "Poupança" && step === 1 && banks.length === 0 && !loadingBanks) {
-      setLoadingBanks(true);
-      fetch("https://brasilapi.com.br/api/banks/v1")
-        .then((r) => r.json())
-        .then((data: Bank[]) => setBanks(data))
-        .catch(() => setBanks([]))
-        .finally(() => setLoadingBanks(false));
-    }
-  }, [selectedCategory, step, banks.length, loadingBanks]);
+// Carrega bancos uma única vez quando a categoria Poupança ou Conta Corrente é aberta na etapa 1
+useEffect(() => {
+  const needsBanks = (selectedCategory === "Poupança" || selectedCategory === "Conta Corrente");
+  if (needsBanks && step === 1 && banks.length === 0 && !loadingBanks) {
+    setLoadingBanks(true);
+    fetch("https://brasilapi.com.br/api/banks/v1")
+      .then((r) => r.json())
+      .then((data: Bank[]) => setBanks(data))
+      .catch(() => setBanks([]))
+      .finally(() => setLoadingBanks(false));
+  }
+}, [selectedCategory, step, banks.length, loadingBanks]);
 
   const filteredBanks = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -116,21 +125,22 @@ const Portfolio = () => {
     return banks.filter((b) => (b.name || b.fullName)?.toLowerCase().includes(q));
   }, [banks, query]);
 
-  function resetWizard() {
-    setStep(1);
-    setQuery("");
-    setSelectedBank(null);
-    setDate(undefined);
-    setAmountMask("");
-    setShowFutureConfirm(false);
-  }
+function resetWizard() {
+  setStep(1);
+  setQuery("");
+  setSelectedBank(null);
+  setDate(undefined);
+  setAmountMask("");
+  setCdiMask("");
+  setShowFutureConfirm(false);
+}
 
-  function handleCategoryClick(c: Category) {
-    setSelectedCategory(c);
-    if (c === "Poupança") {
-      resetWizard();
-    }
+function handleCategoryClick(c: Category) {
+  setSelectedCategory(c);
+  if (c === "Poupança" || c === "Conta Corrente") {
+    resetWizard();
   }
+}
 
   function handleNextFromStep2() {
     if (!date) return;
@@ -143,17 +153,18 @@ const Portfolio = () => {
     }
   }
 
-  function finalizeCreation() {
-    const newAsset: Asset = {
-      id: crypto.randomUUID(),
-      type: "POUPANÇA",
-      institution: selectedBank?.fullName || selectedBank?.name || "",
-      date: (date || new Date()).toISOString(),
-      amount,
-    };
-    setAssets((prev) => [newAsset, ...prev]);
-    setStep(3);
-  }
+function finalizeCreation() {
+  const newAsset: Asset = {
+    id: crypto.randomUUID(),
+    type: selectedCategory === "Conta Corrente" ? "CONTA_CORRENTE" : "POUPANÇA",
+    institution: selectedBank?.fullName || selectedBank?.name || "",
+    date: (date || new Date()).toISOString(),
+    amount,
+    ...(selectedCategory === "Conta Corrente" && cdiPercent > 0 ? { cdiPercent } : {}),
+  } as Asset;
+  setAssets((prev) => [newAsset, ...prev]);
+  setStep(3);
+}
 
   return (
     <div className="min-h-screen">
@@ -240,15 +251,17 @@ const Portfolio = () => {
                   ))}
                 </div>
               </>
-            ) : selectedCategory === "Poupança" ? (
+) : selectedCategory === "Poupança" || selectedCategory === "Conta Corrente" ? (
               <div className="flex h-full flex-col">
                 <SheetHeader>
-                  <SheetTitle>Adicionar Poupança</SheetTitle>
-                  <SheetDescription>
-                    {step === 1 && "Busque e selecione a instituição"}
-                    {step === 2 && "Informe a data e o valor aplicado"}
-                    {step === 3 && "Ativo adicionado com sucesso"}
-                  </SheetDescription>
+                  <SheetTitle>Adicionar {selectedCategory}</SheetTitle>
+<SheetDescription>
+  {step === 1 && "Busque e selecione a instituição"}
+  {step === 2 && (selectedCategory === "Conta Corrente"
+    ? "Informe a data, o valor aplicado e o % sobre o CDI (opcional)"
+    : "Informe a data e o valor aplicado")}
+  {step === 3 && "Ativo adicionado com sucesso"}
+</SheetDescription>
                 </SheetHeader>
 
                 {/* Stepper simple indicator */}
@@ -349,21 +362,40 @@ const Portfolio = () => {
                           </Popover>
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Valor aplicado</label>
-                          <Input
-                            inputMode="numeric"
-                            value={amountMask}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const number = parseMaskedCurrencyToNumber(value);
-                              setAmountMask(
-                                number ? number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : ""
-                              );
-                            }}
-                            placeholder="R$ 0,00"
-                          />
-                        </div>
+<div className="space-y-2">
+  <label className="text-sm font-medium">Valor aplicado</label>
+  <Input
+    inputMode="numeric"
+    value={amountMask}
+    onChange={(e) => {
+      const value = e.target.value;
+      const number = parseMaskedCurrencyToNumber(value);
+      setAmountMask(
+        number ? number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : ""
+      );
+    }}
+    placeholder="R$ 0,00"
+  />
+</div>
+
+{selectedCategory === "Conta Corrente" && (
+  <div className="space-y-2">
+    <label className="text-sm font-medium">% sobre o CDI (opcional)</label>
+    <Input
+      inputMode="numeric"
+      value={cdiMask}
+      onChange={(e) => {
+        const raw = e.target.value;
+        const digits = raw.replace(/\D/g, "");
+        const n = Number(digits) / 100;
+        setCdiMask(
+          n ? `${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : ""
+        );
+      }}
+      placeholder="0,00% (opcional)"
+    />
+  </div>
+)}
                       </div>
                     </div>
                   )}
@@ -383,16 +415,16 @@ const Portfolio = () => {
                         >
                           Adicionar um novo ativo
                         </Button>
-                        <Button
-                          onClick={() => {
-                            resetWizard();
-                            setSelectedCategory("Poupança");
-                            setStep(1);
-                          }}
-                          variant="outline"
-                        >
-                          Adicionar uma nova Poupança
-                        </Button>
+<Button
+  onClick={() => {
+    resetWizard();
+    setSelectedCategory(selectedCategory);
+    setStep(1);
+  }}
+  variant="outline"
+>
+  Adicionar uma nova {selectedCategory}
+</Button>
                       </div>
                     </div>
                   )}
