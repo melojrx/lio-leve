@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Wallet, ArrowLeftRight, Settings, LifeBuoy, User } from "lucide-react";
+import { LayoutDashboard, Wallet, ArrowLeftRight, Settings, LifeBuoy, User, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sidebar,
@@ -16,6 +16,7 @@ import {
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Carteira", url: "/carteira", icon: Wallet },
+  { title: "Mercado", url: "/mercado", icon: TrendingUp },
   { title: "Transações", url: "/transacoes", icon: ArrowLeftRight },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Ajuda", url: "/ajuda", icon: LifeBuoy },

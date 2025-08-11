@@ -19,6 +19,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 import AssetDetails from "./pages/AssetDetails";
 import AccountData from "./pages/AccountData";
+import Mercado from "./pages/Mercado";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,6 @@ const App = () => (
       {/* Toaster desabilitado temporariamente */}
       <AuthProvider>
         <BrowserRouter>
-            {/* Layout */}
             {/* header */}
             <Routes>
               <Route path="/" element={<AppShell><Index /></AppShell>} />
@@ -38,6 +38,7 @@ const App = () => (
               <Route path="/carteira" element={<AppShell><Portfolio /></AppShell>} />
               <Route path="/carteira/ativo/:id" element={<AppShell><AssetDetails /></AppShell>} />
               <Route path="/transacoes" element={<AppShell><Transactions /></AppShell>} />
+              <Route path="/mercado" element={<AppShell><Mercado /></AppShell>} />
               <Route path="/configuracoes" element={<AppShell><Settings /></AppShell>} />
               <Route path="/ajuda" element={<AppShell><Help /></AppShell>} />
               <Route path="/conta" element={<AppShell><Account /></AppShell>} />

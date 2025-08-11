@@ -33,6 +33,7 @@ const Header = () => {
         <nav className="hidden md:flex items-center gap-6 text-sm">
           <Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
           <Link to="/carteira" className="hover:text-primary transition-colors">Carteira</Link>
+          <Link to="/mercado" className="hover:text-primary transition-colors">Mercado</Link>
           <Link to="/transacoes" className="hover:text-primary transition-colors">Transações</Link>
           <Link to="/configuracoes" className="hover:text-primary transition-colors">Configurações</Link>
         </nav>
