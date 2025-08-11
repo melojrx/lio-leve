@@ -40,6 +40,9 @@ import { getAssets, saveAssets } from "@/lib/storage";
 import { searchCryptos, getSimplePricesBRL } from "@/lib/crypto";
 import type { CoinResult } from "@/lib/crypto";
 import type { Asset } from "@/types/asset";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
 
 // Categorias oferecidas no estado vazio
 const categories = [
@@ -123,7 +126,43 @@ const quantity = useMemo(() => {
 const unitPrice = useMemo(() => parseMaskedCurrencyToNumber(unitPriceMask || "0"), [unitPriceMask]);
 const totalBRL = useMemo(() => Math.max(0, quantity * unitPrice), [quantity, unitPrice]);
 
-  const [showFutureConfirm, setShowFutureConfirm] = useState(false);
+// KPIs e gráficos do resumo da carteira
+const totalAmount = useMemo(() => assets.reduce((sum, a) => sum + (a.amount || 0), 0), [assets]);
+
+const largestClass = useMemo(() => {
+  const m = new Map<string, number>();
+  assets.forEach((a) => m.set(a.type, (m.get(a.type) || 0) + (a.amount || 0)));
+  let res: { name: string; value: number } | null = null;
+  m.forEach((v, name) => { if (!res || v > res.value) res = { name, value: v }; });
+  return res;
+}, [assets]);
+
+const composition = useMemo(() => {
+  const colors = [
+    "hsl(var(--primary))",
+    "hsl(var(--accent))",
+    "hsl(var(--muted-foreground))",
+    "hsl(var(--secondary))",
+  ];
+  const m = new Map<string, number>();
+  assets.forEach((a) => m.set(a.type, (m.get(a.type) || 0) + (a.amount || 0)));
+  return Array.from(m.entries()).map(([name, value], i) => ({ name, value, color: colors[i % colors.length] }));
+}, [assets]);
+
+const historySeries = useMemo(() => {
+  if (!assets.length) return [] as { t: string; v: number }[];
+  const sums: Record<string, number> = {};
+  assets.forEach((a) => {
+    const d = new Date(a.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    sums[key] = (sums[key] || 0) + (a.amount || 0);
+  });
+  return Object.entries(sums)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => ({ t: `${k.slice(5, 7)}/${k.slice(2, 4)}`, v }));
+}, [assets]);
+
+const [showFutureConfirm, setShowFutureConfirm] = useState(false);
 
 // Carrega bancos uma única vez quando a categoria Poupança ou Conta Corrente é aberta na etapa 1
 useEffect(() => {
@@ -240,7 +279,7 @@ function finalizeCreation() {
 
   return (
     <div className="min-h-screen">
-      <SEO title="Carteira — investorion.com.br" description="Lista detalhada de ativos e posições." />
+      <SEO title="Minha Carteira — investorion.com.br" description="Resumo da carteira, composição e histórico de aportes." canonical="/carteira" />
 
       <Sheet>
         <section className="container py-10 md:py-14">
