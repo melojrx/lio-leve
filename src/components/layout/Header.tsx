@@ -5,7 +5,7 @@ import { LineChart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+
 
 const Header = () => {
   const { user } = useAuth();
@@ -25,7 +25,6 @@ const Header = () => {
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="mr-1" />
           <Link to="/" className="flex items-center gap-2">
             <div aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20"><LineChart className="h-4 w-4" /></div>
             <span className="font-semibold tracking-tight">investorion.com.br</span>
