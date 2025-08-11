@@ -37,7 +37,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAssets, saveAssets } from "@/lib/storage";
-import { searchCryptos } from "@/lib/crypto";
+import { searchCryptos, getSimplePricesBRL } from "@/lib/crypto";
 import type { CoinResult } from "@/lib/crypto";
 import type { Asset } from "@/types/asset";
 
@@ -103,6 +103,8 @@ const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
 const [cryptoResults, setCryptoResults] = useState<CoinResult[]>([]);
 const [loadingCryptos, setLoadingCryptos] = useState(false);
 const [selectedCoin, setSelectedCoin] = useState<CoinResult | null>(null);
+const [cryptoPrices, setCryptoPrices] = useState<Record<string, number>>({});
+const [loadingPrices, setLoadingPrices] = useState(false);
 
 const [date, setDate] = useState<Date | undefined>();
 const [amountMask, setAmountMask] = useState<string>("");
@@ -152,6 +154,18 @@ useEffect(() => {
   return () => { ctrl.abort(); clearTimeout(t); };
 }, [selectedCategory, step, query]);
 
+// Obtém preços BRL para os resultados de cripto
+useEffect(() => {
+  if (selectedCategory !== "Criptoativos" || step !== 1) { setCryptoPrices({}); return; }
+  const ids = cryptoResults.map((c) => c.id);
+  if (!ids.length) { setCryptoPrices({}); return; }
+  setLoadingPrices(true);
+  getSimplePricesBRL(ids)
+    .then((p) => setCryptoPrices(p))
+    .catch(() => setCryptoPrices({}))
+    .finally(() => setLoadingPrices(false));
+}, [selectedCategory, step, cryptoResults]);
+
   const filteredBanks = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [] as Bank[];
@@ -165,9 +179,13 @@ function resetWizard() {
   setSelectedCoin(null);
   setCryptoResults([]);
   setLoadingCryptos(false);
+  setCryptoPrices({});
+  setLoadingPrices(false);
   setDate(undefined);
   setAmountMask("");
   setCdiMask("");
+  setQtyStr("");
+  setUnitPriceMask("");
   setShowFutureConfirm(false);
 }
 
@@ -190,6 +208,24 @@ function handleCategoryClick(c: Category) {
   }
 
 function finalizeCreation() {
+  if (selectedCategory === "Criptoativos" && selectedCoin) {
+    const newAsset: Asset = {
+      id: crypto.randomUUID(),
+      type: "CRIPTO",
+      institution: selectedCoin.name,
+      date: (date || new Date()).toISOString(),
+      amount: totalBRL,
+      coinId: selectedCoin.id,
+      coinSymbol: selectedCoin.symbol,
+      coinName: selectedCoin.name,
+      coinThumb: selectedCoin.thumb,
+      quantity,
+      unitPriceBRL: unitPrice,
+    } as Asset;
+    setAssets((prev) => [newAsset, ...prev]);
+    setStep(3);
+    return;
+  }
   const newAsset: Asset = {
     id: crypto.randomUUID(),
     type: selectedCategory === "Conta Corrente" ? "CONTA_CORRENTE" : "POUPANÇA",
@@ -320,125 +356,282 @@ function finalizeCreation() {
                 {/* Conteúdo das etapas */}
                 <div className="mt-6 flex-1 overflow-auto">
                   {step === 1 && (
-                    <div className="space-y-4">
-                      <label className="text-sm font-medium">Buscar nova instituição</label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          placeholder="Digite o nome da instituição"
-                          className="pl-9"
-                          value={query}
-                          onChange={(e) => setQuery(e.target.value)}
-                        />
-                      </div>
+<div className="space-y-4">
+  {selectedCategory === "Criptoativos" ? (
+    <>
+      <label className="text-sm font-medium">Buscar criptoativo</label>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Digite o nome da criptomoeda (ex: Bitcoin)"
+          className="pl-9"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
 
-                      {loadingBanks ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" /> Carregando instituições...
-                        </div>
-                      ) : query ? (
-                        <div className="space-y-2">
-                          <div className="text-sm text-muted-foreground">Resultados da pesquisa:</div>
-                          {filteredBanks.length === 0 ? (
-                            <div className="rounded-lg border p-3 text-sm text-muted-foreground">
-                              Nenhuma instituição encontrada.
-                            </div>
-                          ) : (
-                            filteredBanks.slice(0, 10).map((b) => (
-                              <button
-                                key={b.ispb + (b.code ?? "")}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedBank(b);
-                                  setStep(2);
-                                }}
-                                className="w-full rounded-lg border p-3 text-left hover:bg-muted"
-                              >
-                                {b.fullName || b.name}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      ) : (
-                        <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
-                          Escolha uma instituição financeira usando o campo de busca acima.
-                        </div>
-                      )}
+      {loadingCryptos ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Buscando criptos...
+        </div>
+      ) : query ? (
+        <div className="space-y-2">
+          <div className="text-sm text-muted-foreground">Resultados da pesquisa:</div>
+          {cryptoResults.length === 0 ? (
+            <div className="rounded-lg border p-3 text-sm text-muted-foreground">
+              Nenhuma cripto encontrada.
+            </div>
+          ) : (
+            cryptoResults.slice(0, 10).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  setSelectedCoin(c);
+                }}
+                className={cn(
+                  "w-full rounded-lg border p-3 text-left hover:bg-muted",
+                  selectedCoin?.id === c.id && "ring-2 ring-primary"
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {c.thumb ? (
+                      <img src={c.thumb} alt={`${c.name} logo`} className="h-6 w-6 rounded-sm" />
+                    ) : (
+                      <div className="h-6 w-6 rounded-sm bg-muted" />
+                    )}
+                    <div className="flex flex-col">
+                      <span className="font-medium">{c.name} <span className="text-xs text-muted-foreground">({c.symbol})</span></span>
+                      <span className="text-xs text-muted-foreground">ID: {c.id}</span>
                     </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold">
+                      {cryptoPrices[c.id] != null ? formatCurrencyBRL(cryptoPrices[c.id]) : "—"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {loadingPrices ? "Atualizando..." : "Cotação em BRL"}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+          Busque pela criptomoeda usando o campo acima.
+        </div>
+      )}
+    </>
+  ) : (
+    <>
+      <label className="text-sm font-medium">Buscar nova instituição</label>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Digite o nome da instituição"
+          className="pl-9"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {loadingBanks ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando instituições...
+        </div>
+      ) : query ? (
+        <div className="space-y-2">
+          <div className="text-sm text-muted-foreground">Resultados da pesquisa:</div>
+          {filteredBanks.length === 0 ? (
+            <div className="rounded-lg border p-3 text-sm text-muted-foreground">
+              Nenhuma instituição encontrada.
+            </div>
+          ) : (
+            filteredBanks.slice(0, 10).map((b) => (
+              <button
+                key={b.ispb + (b.code ?? "")}
+                type="button"
+                onClick={() => {
+                  setSelectedBank(b);
+                }}
+                className={cn(
+                  "w-full rounded-lg border p-3 text-left hover:bg-muted",
+                  selectedBank?.ispb === b.ispb && "ring-2 ring-primary"
+                )}
+              >
+                {b.fullName || b.name}
+              </button>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+          Escolha uma instituição financeira usando o campo de busca acima.
+        </div>
+      )}
+    </>
+  )}
+</div>
                   )}
 
-                  {step === 2 && (
-                    <div className="space-y-6">
-                      <div className="rounded-lg border p-4">
-                        <div className="text-sm font-medium">Data e valor do investimento</div>
-                        <p className="text-sm text-muted-foreground">Agora informe a data e o valor que você aplicou.</p>
-                      </div>
+{step === 2 && (
+  <div className="space-y-6">
+    {selectedCategory === "Criptoativos" ? (
+      <>
+        <div className="rounded-lg border p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-muted-foreground">Cripto selecionada</div>
+              <div className="font-medium">{selectedCoin?.name} <span className="text-xs text-muted-foreground">({selectedCoin?.symbol})</span></div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-muted-foreground">Cotação atual</div>
+              <div className="font-semibold">{selectedCoin ? (cryptoPrices[selectedCoin.id] != null ? formatCurrencyBRL(cryptoPrices[selectedCoin.id]) : "—") : "—"}</div>
+            </div>
+          </div>
+        </div>
 
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Data de compra</label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full justify-start text-left font-normal",
-                                  !date && "text-muted-foreground"
-                                )}
-                              >
-                                {date ? format(date, "dd.MM.yyyy") : "DD.MM.AAAA"}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={date}
-                                onSelect={setDate}
-                                initialFocus
-                                className={cn("p-3 pointer-events-auto")}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Data de compra</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  {date ? format(date, "dd.MM.yyyy") : "DD.MM.AAAA"}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
 
-<div className="space-y-2">
-  <label className="text-sm font-medium">Valor aplicado</label>
-  <Input
-    inputMode="numeric"
-    value={amountMask}
-    onChange={(e) => {
-      const value = e.target.value;
-      const number = parseMaskedCurrencyToNumber(value);
-      setAmountMask(
-        number ? number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : ""
-      );
-    }}
-    placeholder="R$ 0,00"
-  />
-</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantidade</label>
+              <Input
+                inputMode="decimal"
+                value={qtyStr}
+                onChange={(e) => setQtyStr(e.target.value)}
+                placeholder="0,00000000"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Preço unitário (BRL)</label>
+              <Input
+                inputMode="numeric"
+                value={unitPriceMask}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const number = parseMaskedCurrencyToNumber(value);
+                  setUnitPriceMask(
+                    number ? number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : ""
+                  );
+                }}
+                placeholder="R$ 0,00"
+              />
+              <p className="text-xs text-muted-foreground">
+                Dica: você pode usar a cotação atual como referência.
+              </p>
+            </div>
+          </div>
 
-{selectedCategory === "Conta Corrente" && (
-  <div className="space-y-2">
-    <label className="text-sm font-medium">% sobre o CDI (opcional)</label>
-    <Input
-      inputMode="numeric"
-      value={cdiMask}
-      onChange={(e) => {
-        const raw = e.target.value;
-        const digits = raw.replace(/\D/g, "");
-        const n = Number(digits) / 100;
-        setCdiMask(
-          n ? `${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : ""
-        );
-      }}
-      placeholder="0,00% (opcional)"
-    />
+          <div className="rounded-lg border p-3 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Total</span>
+            <span className="font-semibold">{formatCurrencyBRL(totalBRL)}</span>
+          </div>
+        </div>
+      </>
+    ) : (
+      <>
+        <div className="rounded-lg border p-4">
+          <div className="text-sm font-medium">Data e valor do investimento</div>
+          <p className="text-sm text-muted-foreground">Agora informe a data e o valor que você aplicou.</p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Data de compra</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  {date ? format(date, "dd.MM.yyyy") : "DD.MM.AAAA"}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Valor aplicado</label>
+            <Input
+              inputMode="numeric"
+              value={amountMask}
+              onChange={(e) => {
+                const value = e.target.value;
+                const number = parseMaskedCurrencyToNumber(value);
+                setAmountMask(
+                  number ? number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : ""
+                );
+              }}
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          {selectedCategory === "Conta Corrente" && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">% sobre o CDI (opcional)</label>
+              <Input
+                inputMode="numeric"
+                value={cdiMask}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const digits = raw.replace(/\D/g, "");
+                  const n = Number(digits) / 100;
+                  setCdiMask(
+                    n ? `${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : ""
+                  );
+                }}
+                placeholder="0,00% (opcional)"
+              />
+            </div>
+          )}
+        </div>
+      </>
+    )}
   </div>
 )}
-                      </div>
-                    </div>
-                  )}
 
                   {step === 3 && (
                     <div className="flex h-full flex-col items-center justify-center">
@@ -486,15 +679,21 @@ function finalizeCreation() {
                         Cancelar
                       </Button>
                     </div>
-                    {step === 1 ? (
-                      <Button disabled={!selectedBank} onClick={() => setStep(2)}>
-                        Avançar
-                      </Button>
-                    ) : (
-                      <Button disabled={!date || amount <= 0} onClick={handleNextFromStep2}>
-                        Avançar
-                      </Button>
-                    )}
+{step === 1 ? (
+  <Button
+    disabled={selectedCategory === "Criptoativos" ? !selectedCoin : !selectedBank}
+    onClick={() => setStep(2)}
+  >
+    Avançar
+  </Button>
+) : (
+  <Button
+    disabled={selectedCategory === "Criptoativos" ? !date || quantity <= 0 || unitPrice <= 0 : !date || amount <= 0}
+    onClick={handleNextFromStep2}
+  >
+    Avançar
+  </Button>
+)}
                   </div>
                 )}
 
