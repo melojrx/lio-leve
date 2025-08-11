@@ -35,6 +35,9 @@ import {
   Wallet,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { getAssets, saveAssets } from "@/lib/storage";
+import type { Asset } from "@/types/asset";
 
 // Categorias oferecidas no estado vazio
 const categories = [
@@ -62,13 +65,7 @@ interface Bank {
   fullName: string;
 }
 
-interface Asset {
-  id: string;
-  type: "POUPANÇA";
-  institution: string;
-  date: string; // ISO
-  amount: number; // em BRL
-}
+// Asset type moved to shared file
 
 function formatCurrencyBRL(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -82,7 +79,8 @@ function parseMaskedCurrencyToNumber(masked: string) {
 
 const Portfolio = () => {
   // Lista local de ativos (apenas demonstração)
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets, setAssets] = useState<Asset[]>(() => getAssets());
+  useEffect(() => { saveAssets(assets); }, [assets]);
 
   // Sheet state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -177,7 +175,7 @@ const Portfolio = () => {
             <div className="mt-8 space-y-4">
               {assets.map((a) => (
                 <div key={a.id} className="rounded-lg border p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="text-sm text-muted-foreground">{a.type}</div>
                       <div className="font-medium">{a.institution}</div>
@@ -185,6 +183,9 @@ const Portfolio = () => {
                     <div className="text-right">
                       <div className="text-sm">{format(new Date(a.date), "dd.MM.yyyy")}</div>
                       <div className="font-semibold">{formatCurrencyBRL(a.amount)}</div>
+                      <Link to={`/carteira/ativo/${a.id}`} className="inline-block mt-2">
+                        <Button size="sm" variant="outline">Ver detalhes</Button>
+                      </Link>
                     </div>
                   </div>
                 </div>

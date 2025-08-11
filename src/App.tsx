@@ -15,6 +15,7 @@ import AppShell from "@/components/layout/AppShell";
 import { AuthProvider } from "@/contexts/AuthContext";
 // import RequireAuth from "@/components/auth/RequireAuth";
 import { ThemeProvider } from "next-themes";
+import AssetDetails from "./pages/AssetDetails";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/cadastro" element={<AppShell><Register /></AppShell>} />
               <Route path="/dashboard" element={<AppShell><Dashboard /></AppShell>} />
               <Route path="/carteira" element={<AppShell><Portfolio /></AppShell>} />
+              <Route path="/carteira/ativo/:id" element={<AppShell><AssetDetails /></AppShell>} />
               <Route path="/transacoes" element={<AppShell><Transactions /></AppShell>} />
               <Route path="/configuracoes" element={<AppShell><Settings /></AppShell>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
