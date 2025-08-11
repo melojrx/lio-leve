@@ -46,14 +46,14 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="pt-4">
               <Tabs defaultValue="1M">
-                <div className="flex items-center justify-between">
-                  <div className="text-3xl font-semibold">R$ 128.450</div>
-                  <TabsList>
-                    <TabsTrigger value="1D">1D</TabsTrigger>
-                    <TabsTrigger value="1M">1M</TabsTrigger>
-                    <TabsTrigger value="1A">1A</TabsTrigger>
-                  </TabsList>
-                </div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="text-3xl font-semibold">R$ 128.450</div>
+                    <TabsList className="sm:ml-auto">
+                      <TabsTrigger value="1D">1D</TabsTrigger>
+                      <TabsTrigger value="1M">1M</TabsTrigger>
+                      <TabsTrigger value="1A">1A</TabsTrigger>
+                    </TabsList>
+                  </div>
                 {(["1D","1M","1A"] as const).map((k) => (
                   <TabsContent key={k} value={k} className="h-64">
                     <ResponsiveContainer width="100%" height="100%">

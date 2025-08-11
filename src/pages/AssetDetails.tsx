@@ -90,12 +90,12 @@ return (
     />
       <main className="container py-8">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">{typeLabel}</h1>
             <p className="text-sm text-muted-foreground">{asset.institution}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="secondary" onClick={() => navigate(-1)}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
             </Button>

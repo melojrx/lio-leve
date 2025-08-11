@@ -36,17 +36,17 @@ const Header = () => {
           <Link to="/transacoes" className="hover:text-primary transition-colors">Transações</Link>
           <Link to="/configuracoes" className="hover:text-primary transition-colors">Configurações</Link>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-sm:gap-1">
           {!user ? (
-            <div className="flex items-center gap-2">
-              <Link to="/login"><Button variant="soft">Entrar</Button></Link>
-              <Link to="/cadastro"><Button variant="hero" radius="pill">Criar conta</Button></Link>
+            <div className="flex items-center gap-2 max-sm:gap-1">
+              <Link to="/login"><Button variant="soft" className="max-sm:h-9 max-sm:px-3 max-sm:text-xs">Entrar</Button></Link>
+              <Link to="/cadastro"><Button variant="hero" radius="pill" className="max-sm:h-9 max-sm:px-3 max-sm:text-xs">Criar conta</Button></Link>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link to="/conta"><Button variant="outline">Conta</Button></Link>
-              <Link to="/dashboard"><Button variant="soft">Minha área</Button></Link>
-              <Button variant="outline" onClick={handleSignOut}>Sair</Button>
+            <div className="flex items-center gap-2 max-sm:gap-1">
+              <Link to="/conta"><Button variant="outline" className="max-sm:h-9 max-sm:px-3 max-sm:text-xs">Conta</Button></Link>
+              <Link to="/dashboard"><Button variant="soft" className="max-sm:h-9 max-sm:px-3 max-sm:text-xs">Minha área</Button></Link>
+              <Button variant="outline" onClick={handleSignOut} className="max-sm:h-9 max-sm:px-3 max-sm:text-xs">Sair</Button>
             </div>
           )}
         </div>

@@ -43,15 +43,15 @@ const Index = () => {
             Consolide investimentos, acompanhe rentabilidade e tome decisões com
             dados em tempo real.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link to="/cadastro">
-              <Button variant="hero" radius="pill" size="xl">
+              <Button variant="hero" radius="pill" size="xl" className="w-full sm:w-auto">
                 Começar grátis
                 <ArrowRight className="ml-1" />
               </Button>
             </Link>
             <Link to="/dashboard">
-              <Button variant="outline" size="xl">Ver demo</Button>
+              <Button variant="outline" size="xl" className="w-full sm:w-auto">Ver demo</Button>
             </Link>
           </div>
           <div className="mt-10 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
