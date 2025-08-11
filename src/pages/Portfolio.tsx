@@ -110,6 +110,17 @@ const amount = useMemo(() => parseMaskedCurrencyToNumber(amountMask || "0"), [am
 const [cdiMask, setCdiMask] = useState<string>("");
 const cdiPercent = useMemo(() => parseMaskedPercentToNumber(cdiMask || "0"), [cdiMask]);
 
+// Etapa 2 (Cripto): quantidade e preço unitário BRL
+const [qtyStr, setQtyStr] = useState<string>("");
+const [unitPriceMask, setUnitPriceMask] = useState<string>("");
+const quantity = useMemo(() => {
+  const s = qtyStr.replace(",", ".");
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+}, [qtyStr]);
+const unitPrice = useMemo(() => parseMaskedCurrencyToNumber(unitPriceMask || "0"), [unitPriceMask]);
+const totalBRL = useMemo(() => Math.max(0, quantity * unitPrice), [quantity, unitPrice]);
+
   const [showFutureConfirm, setShowFutureConfirm] = useState(false);
 
 // Carrega bancos uma única vez quando a categoria Poupança ou Conta Corrente é aberta na etapa 1
@@ -281,10 +292,14 @@ function finalizeCreation() {
                 <SheetHeader>
                   <SheetTitle>Adicionar {selectedCategory}</SheetTitle>
 <SheetDescription>
-  {step === 1 && "Busque e selecione a instituição"}
-  {step === 2 && (selectedCategory === "Conta Corrente"
-    ? "Informe a data, o valor aplicado e o % sobre o CDI (opcional)"
-    : "Informe a data e o valor aplicado")}
+  {step === 1 && (selectedCategory === "Criptoativos" ? "Busque e selecione a criptomoeda" : "Busque e selecione a instituição")}
+  {step === 2 && (
+    selectedCategory === "Conta Corrente"
+      ? "Informe a data, o valor aplicado e o % sobre o CDI (opcional)"
+      : selectedCategory === "Criptoativos"
+        ? "Informe a data, a quantidade e o preço unitário (BRL)"
+        : "Informe a data e o valor aplicado"
+  )}
   {step === 3 && "Ativo adicionado com sucesso"}
 </SheetDescription>
                 </SheetHeader>
