@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserCog, KeyRound, LifeBuoy, ShieldCheck, Info } from "lucide-react";
-
+import { Link } from "react-router-dom";
 const tiles = [
-  { title: "Meu Perfil", icon: UserCog },
-  { title: "Alterar Senha", icon: KeyRound },
-  { title: "Abrir Chamado", icon: LifeBuoy },
-  { title: "Privacidade e uso", icon: ShieldCheck },
-  { title: "Sobre o Investorion", icon: Info },
+  { title: "Meu Perfil", icon: UserCog, to: "/conta/dados?tab=perfil" },
+  { title: "Alterar Senha", icon: KeyRound, to: "/conta/dados?tab=senha" },
+  { title: "Abrir Chamado", icon: LifeBuoy, to: "/ajuda" },
+  { title: "Privacidade e uso", icon: ShieldCheck, to: "/conta/dados?tab=privacidade" },
+  { title: "Sobre o Investorion", icon: Info, to: "/ajuda" },
 ];
 
 const Account = () => {
@@ -42,12 +42,14 @@ const Account = () => {
               {/* Tiles */}
               <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
                 {tiles.map((t) => (
-                  <Card key={t.title} className="rounded-xl">
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <t.icon className="h-5 w-5 text-primary" aria-hidden />
-                      <span className="text-sm font-medium">{t.title}</span>
-                    </CardContent>
-                  </Card>
+                  <Link key={t.title} to={t.to} className="block">
+                    <Card className="rounded-xl hover:ring-1 hover:ring-primary/30 transition-colors">
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <t.icon className="h-5 w-5 text-primary" aria-hidden />
+                        <span className="text-sm font-medium">{t.title}</span>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
 

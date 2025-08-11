@@ -18,6 +18,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // import RequireAuth from "@/components/auth/RequireAuth";
 import { ThemeProvider } from "next-themes";
 import AssetDetails from "./pages/AssetDetails";
+import AccountData from "./pages/AccountData";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/configuracoes" element={<AppShell><Settings /></AppShell>} />
               <Route path="/ajuda" element={<AppShell><Help /></AppShell>} />
               <Route path="/conta" element={<AppShell><Account /></AppShell>} />
+              <Route path="/conta/dados" element={<AppShell><AccountData /></AppShell>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<AppShell><NotFound /></AppShell>} />
             </Routes>
