@@ -1,4 +1,4 @@
-export type AssetType = "POUPANÇA" | "CONTA_CORRENTE";
+export type AssetType = "POUPANÇA" | "CONTA_CORRENTE" | "CRIPTO";
 
 export interface Asset {
   id: string;

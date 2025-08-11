@@ -37,6 +37,8 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAssets, saveAssets } from "@/lib/storage";
+import { searchCryptos } from "@/lib/crypto";
+import type { CoinResult } from "@/lib/crypto";
 import type { Asset } from "@/types/asset";
 
 // Categorias oferecidas no estado vazio
@@ -96,7 +98,11 @@ const Portfolio = () => {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loadingBanks, setLoadingBanks] = useState(false);
   const [query, setQuery] = useState("");
-  const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
+const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
+// Criptoativos
+const [cryptoResults, setCryptoResults] = useState<CoinResult[]>([]);
+const [loadingCryptos, setLoadingCryptos] = useState(false);
+const [selectedCoin, setSelectedCoin] = useState<CoinResult | null>(null);
 
 const [date, setDate] = useState<Date | undefined>();
 const [amountMask, setAmountMask] = useState<string>("");
@@ -119,6 +125,22 @@ useEffect(() => {
   }
 }, [selectedCategory, step, banks.length, loadingBanks]);
 
+// Busca criptomoedas quando categoria "Criptoativos" estiver ativa na etapa 1
+useEffect(() => {
+  if (selectedCategory !== "Criptoativos" || step !== 1) return;
+  const q = query.trim();
+  if (!q) { setCryptoResults([]); return; }
+  const ctrl = new AbortController();
+  setLoadingCryptos(true);
+  const t = setTimeout(() => {
+    searchCryptos(q, { signal: ctrl.signal })
+      .then((res) => setCryptoResults(res))
+      .catch(() => setCryptoResults([]))
+      .finally(() => setLoadingCryptos(false));
+  }, 300);
+  return () => { ctrl.abort(); clearTimeout(t); };
+}, [selectedCategory, step, query]);
+
   const filteredBanks = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [] as Bank[];
@@ -129,6 +151,9 @@ function resetWizard() {
   setStep(1);
   setQuery("");
   setSelectedBank(null);
+  setSelectedCoin(null);
+  setCryptoResults([]);
+  setLoadingCryptos(false);
   setDate(undefined);
   setAmountMask("");
   setCdiMask("");
@@ -137,7 +162,7 @@ function resetWizard() {
 
 function handleCategoryClick(c: Category) {
   setSelectedCategory(c);
-  if (c === "Poupança" || c === "Conta Corrente") {
+  if (c === "Poupança" || c === "Conta Corrente" || c === "Criptoativos") {
     resetWizard();
   }
 }
@@ -251,7 +276,7 @@ function finalizeCreation() {
                   ))}
                 </div>
               </>
-) : selectedCategory === "Poupança" || selectedCategory === "Conta Corrente" ? (
+) : selectedCategory === "Poupança" || selectedCategory === "Conta Corrente" || selectedCategory === "Criptoativos" ? (
               <div className="flex h-full flex-col">
                 <SheetHeader>
                   <SheetTitle>Adicionar {selectedCategory}</SheetTitle>
