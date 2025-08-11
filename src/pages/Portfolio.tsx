@@ -284,7 +284,7 @@ function finalizeCreation() {
       <Sheet>
         <section className="container py-10 md:py-14">
           <header className="flex items-center justify-between gap-4">
-            <h1 className="text-2xl font-semibold">Carteira</h1>
+            <h1 className="text-2xl font-semibold">Minha Carteira</h1>
             <SheetTrigger asChild>
               <Button size="sm">
                 <Plus className="mr-2 h-4 w-4" />
@@ -293,46 +293,163 @@ function finalizeCreation() {
             </SheetTrigger>
           </header>
 
-          {assets.length > 0 ? (
-            <div className="mt-8 space-y-4">
-              {assets.map((a) => (
-                <div key={a.id} className="rounded-lg border p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <div className="text-sm text-muted-foreground">{a.type}</div>
-                      <div className="font-medium">{a.institution}</div>
+          <Tabs defaultValue="resumo" className="mt-6">
+            <TabsList className="justify-start">
+              <TabsTrigger value="resumo">Resumo</TabsTrigger>
+              <TabsTrigger value="ativos">Ativos</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="resumo" className="space-y-6">
+              <h2 className="text-xl font-semibold">Resumo da Carteira</h2>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Saldo Bruto</CardTitle>
+                    <CardDescription>Visão geral do seu patrimônio</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{formatCurrencyBRL(totalAmount)}</div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Maior classe de ativo: {largestClass ? `${formatCurrencyBRL(largestClass.value)} em ${largestClass.name}` : "—"}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Valor Aplicado</CardTitle>
+                    <CardDescription>Soma de todos os aportes</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{formatCurrencyBRL(totalAmount)}</div>
+                    <p className="mt-2 text-xs text-muted-foreground">Aportes nos últ. 12 meses: —</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Rentabilidade</CardTitle>
+                    <CardDescription>Consolidada</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">0,00%</div>
+                    <p className="mt-2 text-xs text-muted-foreground">Últimos 12 meses: 0,00%</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Meta de Patrimônio</CardTitle>
+                    <CardDescription>Renda Passiva</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">0%</div>
+                    <p className="mt-2 text-xs text-muted-foreground">Meta: R$ -</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Composição da Carteira</CardTitle>
+                    <CardDescription>Distribuição por classe</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={composition} dataKey="value" nameKey="name" innerRadius={60} outerRadius={85} paddingAngle={3} stroke="transparent">
+                            {composition.map((entry, i) => (
+                              <Cell key={`cell-${i}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm">{format(new Date(a.date), "dd.MM.yyyy")}</div>
-                      <div className="font-semibold">{formatCurrencyBRL(a.amount)}</div>
-                      <Link to={`/carteira/ativo/${a.id}`} className="inline-block mt-2">
-                        <Button size="sm" variant="outline">Ver detalhes</Button>
-                      </Link>
+                    <div className="mt-4 space-y-2">
+                      {composition.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Sem dados ainda. Adicione ativos para ver a composição.</p>
+                      ) : (
+                        composition.map((c) => (
+                          <div key={c.name} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full" style={{ background: c.color }} />
+                              <span>{c.name}</span>
+                            </div>
+                            <span className="text-muted-foreground">{((c.value / (totalAmount || 1)) * 100).toFixed(1)}%</span>
+                          </div>
+                        ))
+                      )}
                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Histórico</CardTitle>
+                    <CardDescription>Patrimônio ao longo do tempo</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={historySeries} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
+                          <XAxis dataKey="t" tickLine={false} axisLine={false} />
+                          <YAxis hide />
+                          <Tooltip />
+                          <Area type="monotone" dataKey="v" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="ativos">
+              {assets.length > 0 ? (
+                <div className="mt-4 space-y-4">
+                  {assets.map((a) => (
+                    <div key={a.id} className="rounded-lg border p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <div className="text-sm text-muted-foreground">{a.type}</div>
+                          <div className="font-medium">{a.institution}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm">{format(new Date(a.date), "dd.MM.yyyy")}</div>
+                          <div className="font-semibold">{formatCurrencyBRL(a.amount)}</div>
+                          <Link to={`/carteira/ativo/${a.id}`} className="inline-block mt-2">
+                            <Button size="sm" variant="outline">Ver detalhes</Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // Estado vazio
+                <div className="mt-10 flex flex-col items-center justify-center rounded-lg border p-10 text-center">
+                  <div className="grid place-items-center h-12 w-12 rounded-full border bg-muted">
+                    <Wallet className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h2 className="mt-4 text-lg font-medium">Você ainda não cadastrou nenhum ativo.</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Adicione seu primeiro ativo para começar a acompanhar sua carteira.
+                  </p>
+                  <div className="mt-6">
+                    <SheetTrigger asChild>
+                      <Button variant="secondary">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar ativo
+                      </Button>
+                    </SheetTrigger>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            // Estado vazio
-            <div className="mt-10 flex flex-col items-center justify-center rounded-lg border p-10 text-center">
-              <div className="grid place-items-center h-12 w-12 rounded-full border bg-muted">
-                <Wallet className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h2 className="mt-4 text-lg font-medium">Você ainda não cadastrou nenhum ativo.</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Adicione seu primeiro ativo para começar a acompanhar sua carteira.
-              </p>
-              <div className="mt-6">
-                <SheetTrigger asChild>
-                  <Button variant="secondary">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Adicionar ativo
-                  </Button>
-                </SheetTrigger>
-              </div>
-            </div>
-          )}
+              )}
+            </TabsContent>
+          </Tabs>
 
           {/* Painel lateral */}
           <SheetContent side="right" className="w-full sm:max-w-md">
