@@ -12,6 +12,7 @@ import Portfolio from "./pages/Portfolio";
 import Transactions from "./pages/Transactions";
 import Settings from "./pages/Settings";
 import Account from "./pages/Account";
+import Help from "./pages/Help";
 import AppShell from "@/components/layout/AppShell";
 import { AuthProvider } from "@/contexts/AuthContext";
 // import RequireAuth from "@/components/auth/RequireAuth";
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/carteira/ativo/:id" element={<AppShell><AssetDetails /></AppShell>} />
               <Route path="/transacoes" element={<AppShell><Transactions /></AppShell>} />
               <Route path="/configuracoes" element={<AppShell><Settings /></AppShell>} />
+              <Route path="/ajuda" element={<AppShell><Help /></AppShell>} />
               <Route path="/conta" element={<AppShell><Account /></AppShell>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<AppShell><NotFound /></AppShell>} />
