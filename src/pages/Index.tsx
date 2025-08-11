@@ -53,6 +53,9 @@ const Index = () => {
             <Link to="/dashboard">
               <Button variant="outline" size="xl" className="w-full sm:w-auto">Ver demo</Button>
             </Link>
+            <Link to="/conta">
+              <Button variant="outline" size="xl" className="w-full sm:w-auto">Minha Conta</Button>
+            </Link>
           </div>
           <div className="mt-10 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
             <Shield className="h-4 w-4" /> Dados protegidos e criptografados
