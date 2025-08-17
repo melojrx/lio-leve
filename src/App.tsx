@@ -32,8 +32,8 @@ const App = () => (
             {/* header */}
             <Routes>
               <Route path="/" element={<AppShell><Index /></AppShell>} />
-              <Route path="/login" element={<AppShell><Login /></AppShell>} />
-              <Route path="/cadastro" element={<AppShell><Register /></AppShell>} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/cadastro" element={<Register />} />
               <Route path="/dashboard" element={<AppShell><Dashboard /></AppShell>} />
               <Route path="/carteira" element={<AppShell><Portfolio /></AppShell>} />
               <Route path="/carteira/ativo/:id" element={<AppShell><AssetDetails /></AppShell>} />
