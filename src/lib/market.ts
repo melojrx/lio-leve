@@ -39,91 +39,38 @@ export type StockQuote = {
 export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
   if (!symbols.length) return [];
   
-  // Buscar dados individuais para melhor confiabilidade
-  const results: StockQuote[] = [];
-  
-  for (const symbol of symbols) {
-    try {
-      let apiUrl: string;
-      
-      if (symbol.startsWith("^")) {
-        // Índices - usar Yahoo Finance
-        apiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
-      } else {
-        // Ações brasileiras - usar API brasileira mais confiável
-        apiUrl = `https://brapi.dev/api/quote/${symbol}?token=demo`;
-      }
-      
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
-      const res = await fetch(proxyUrl);
-      
-      if (!res.ok) continue;
-      
-      const proxyData = await res.json();
-      let data;
-      
-      try {
-        data = JSON.parse(proxyData.contents);
-      } catch {
-        continue;
-      }
-      
-      if (symbol.startsWith("^")) {
-        // Processar dados do Yahoo Finance para índices
-        if (data?.chart?.result?.[0]) {
-          const result = data.chart.result[0];
-          const meta = result.meta;
-          
-          if (meta) {
-            const currentPrice = meta.regularMarketPrice || meta.previousClose;
-            const previousClose = meta.previousClose || meta.chartPreviousClose;
-            
-            results.push({
-              symbol,
-              shortName: meta.longName || meta.shortName || symbol,
-              regularMarketPrice: currentPrice,
-              regularMarketChangePercent: currentPrice && previousClose 
-                ? ((currentPrice - previousClose) / previousClose) * 100
-                : undefined,
-              currency: meta.currency || "BRL",
-              updatedAt: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : undefined,
-            });
-          }
-        }
-      } else {
-        // Processar dados da Brapi para ações brasileiras
-        if (data?.results?.[0]) {
-          const stock = data.results[0];
-          results.push({
-            symbol,
-            shortName: stock.shortName || stock.longName || symbol,
-            regularMarketPrice: stock.regularMarketPrice,
-            regularMarketChangePercent: stock.regularMarketChangePercent,
-            currency: stock.currency || "BRL",
-            updatedAt: stock.regularMarketTime ? new Date(stock.regularMarketTime * 1000).toISOString() : undefined,
-          });
-        }
-      }
-    } catch (error) {
-      console.log(`Erro ao buscar ${symbol}:`, error);
-      // Continua para o próximo símbolo
-      continue;
+  try {
+    // Usar Yahoo Finance API para buscar múltiplas cotações de uma vez
+    const symbolsStr = symbols.join(',');
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsStr}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-  }
-  
-  // Se não conseguiu nenhum dado, retorna dados mockados para demonstração
-  if (results.length === 0) {
-    return symbols.slice(0, 10).map((symbol, index) => ({
-      symbol,
-      shortName: symbol,
-      regularMarketPrice: 50 + Math.random() * 100,
-      regularMarketChangePercent: (Math.random() - 0.5) * 10,
-      currency: "BRL",
-      updatedAt: new Date().toISOString(),
+    
+    const data = await response.json();
+    
+    if (!data?.quoteResponse?.result) {
+      throw new Error('Invalid response format');
+    }
+    
+    const results: StockQuote[] = data.quoteResponse.result.map((quote: any) => ({
+      symbol: quote.symbol,
+      shortName: quote.shortName || quote.longName || quote.symbol,
+      regularMarketPrice: quote.regularMarketPrice,
+      regularMarketChangePercent: quote.regularMarketChangePercent,
+      regularMarketVolume: quote.regularMarketVolume,
+      fiftyTwoWeekChangePercent: quote.fiftyTwoWeekChangePercent,
+      currency: quote.currency || "BRL",
+      updatedAt: quote.regularMarketTime ? new Date(quote.regularMarketTime * 1000).toISOString() : undefined,
     }));
+    
+    return results;
+  } catch (error) {
+    console.error('Erro ao buscar cotações:', error);
+    return [];
   }
-  
-  return results;
 }
 
 export type MacroSeries = {
