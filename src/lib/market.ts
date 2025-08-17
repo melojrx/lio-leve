@@ -36,19 +36,54 @@ export type StockQuote = {
 
 export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
   if (!symbols.length) return [];
-  const url = `https://brapi.dev/api/quote/${symbols.map(encodeURIComponent).join(",")}?range=1d&interval=1d&fundamental=false`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const data = await res.json();
-  const results: any[] = Array.isArray(data?.results) ? data.results : [];
-  return results.map((r) => ({
-    symbol: r.symbol,
-    shortName: r.shortName ?? r.longName,
-    regularMarketPrice: r.regularMarketPrice,
-    regularMarketChangePercent: r.regularMarketChangePercent,
-    currency: r.currency ?? "BRL",
-    updatedAt: r.regularMarketTime ?? r.firstTradeDateEpochUtc,
-  }));
+  
+  // Convert symbols to Yahoo Finance format (add .SA for Brazilian stocks)
+  const yahooSymbols = symbols.map(symbol => {
+    if (symbol.startsWith("^")) return symbol; // Indices like ^BVSP
+    if (symbol.endsWith(".SA")) return symbol; // Already formatted
+    return `${symbol}.SA`; // Add .SA for Brazilian stocks
+  });
+  
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbols.join(",")}`;
+  
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    if (!res.ok) return [];
+    
+    const data = await res.json();
+    const results: StockQuote[] = [];
+    
+    if (data?.chart?.result) {
+      data.chart.result.forEach((result: any, index: number) => {
+        const meta = result?.meta;
+        const quote = result?.indicators?.quote?.[0];
+        
+        if (meta && quote) {
+          const originalSymbol = symbols[index]; // Use original symbol format
+          results.push({
+            symbol: originalSymbol,
+            shortName: meta.longName || meta.shortName || originalSymbol,
+            regularMarketPrice: meta.regularMarketPrice || meta.previousClose,
+            regularMarketChangePercent: meta.regularMarketPrice && meta.previousClose 
+              ? ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
+              : undefined,
+            currency: meta.currency || "BRL",
+            updatedAt: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : undefined,
+          });
+        }
+      });
+    }
+    
+    return results;
+  } catch (error) {
+    console.error("Error fetching Yahoo Finance data:", error);
+    return [];
+  }
 }
 
 export type MacroSeries = {

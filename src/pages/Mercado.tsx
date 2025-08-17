@@ -43,28 +43,53 @@ function formatPct(n?: number) {
 const marketSections = {
   indices: {
     title: "Índices",
-    symbols: ["^BVSP", "ICON", "IDIV", "IFIX", "IFNC", "INDX", "SMLL"],
+    symbols: ["^BVSP", "IBRX100", "IBXL", "IBXX", "IBRA", "ICON11", "IDIV11", "IFIX11", "IFNC11", "INDX11", "SMLL11", "MLCX11", "UTIP11", "IVBX11"],
     color: "emerald"
   },
   retail: {
-    title: "Comércio Varejista",
-    symbols: ["LREN3", "CEAB3", "GUAR3", "CGRA4", "AMAR3", "CGRA3", "VSTE3"],
+    title: "Comércio Varejista", 
+    symbols: ["LREN3", "MGLU3", "VVAR3", "AMER3", "GUAR3", "CEAB3", "CGRA4", "AMAR3", "VSTE3", "SOMA3", "HBSA3"],
     color: "purple"
   },
   banks: {
     title: "Bancos",
-    symbols: ["BBAS3", "ITSA4", "ITUB4", "BBDC4", "BPAC11", "INBR32", "BBDC3"],
+    symbols: ["BBAS3", "ITSA4", "ITUB4", "BBDC4", "BBDC3", "BPAC11", "SANB11", "BMGB4", "BAZA3", "PINE4", "INBR32"],
     color: "orange"
   },
   oil: {
-    title: "Petróleo",
-    symbols: ["PETR4", "VBBR3", "PETR3", "PRIO3", "UGPA3", "BRAV3", "CSAN3"],
+    title: "Petróleo & Energia",
+    symbols: ["PETR4", "PETR3", "VALE3", "PRIO3", "VBBR3", "UGPA3", "BRAV3", "CSAN3", "RECV3", "3R11", "ELET3", "ELET6"],
     color: "red"
+  },
+  mining: {
+    title: "Mineração",
+    symbols: ["VALE3", "CSNA3", "USIM5", "GOAU4", "GGBR4", "FESA4", "GERD3", "GBIO33"],
+    color: "amber"
+  },
+  tech: {
+    title: "Tecnologia",
+    symbols: ["MGLU3", "B3SA3", "TOTS3", "LWSA3", "TRIS3", "POSI3", "CASH3", "MELI34"],
+    color: "blue"
+  },
+  food: {
+    title: "Alimentício",
+    symbols: ["JBSS3", "BRF3", "MRFG3", "SMTO3", "BEEF3", "CAML3", "MDIA3", "GRND3"],
+    color: "green"
+  },
+  utilities: {
+    title: "Utilities",
+    symbols: ["ELET3", "ELET6", "CPFE3", "CMIG4", "TAEE11", "NEOE3", "CEBR6", "SBSP3", "SAPR11"],
+    color: "cyan"
+  },
+  construction: {
+    title: "Construção Civil",
+    symbols: ["MRVE3", "CYRE3", "EZTC3", "EVEN3", "HBOR3", "JHSF3", "TCSA3", "DIRR3"],
+    color: "gray"
   },
   personalcare: {
     title: "Cuidados Pessoais",
-    symbols: ["NATU3", "BOBR4"],
-    color: "green"
+    symbols: ["NATU3", "BOBR4", "NTCO3", "PNVL3"],
+    color: "pink"
   }
 };
 
