@@ -43,53 +43,63 @@ function formatPct(n?: number) {
 const marketSections = {
   indices: {
     title: "Índices",
-    symbols: ["^BVSP", "IBRX100", "IBXL", "IBXX", "IBRA", "ICON11", "IDIV11", "IFIX11", "IFNC11", "INDX11", "SMLL11", "MLCX11", "UTIP11", "IVBX11"],
+    symbols: ["^BVSP", "IBRX100", "IBXL", "IBXX", "IBRA", "ICON11", "IDIV11", "IFIX11", "IFNC11", "INDX11", "SMLL11", "MLCX11", "UTIP11", "IVBX11", "ISEE11", "IEEX11", "IMOB11"],
     color: "emerald"
-  },
-  retail: {
-    title: "Comércio Varejista", 
-    symbols: ["LREN3", "MGLU3", "VVAR3", "AMER3", "GUAR3", "CEAB3", "CGRA4", "AMAR3", "VSTE3", "SOMA3", "HBSA3"],
-    color: "purple"
   },
   banks: {
     title: "Bancos",
-    symbols: ["BBAS3", "ITSA4", "ITUB4", "BBDC4", "BBDC3", "BPAC11", "SANB11", "BMGB4", "BAZA3", "PINE4", "INBR32"],
+    symbols: ["BBAS3", "ITSA4", "ITUB4", "BBDC4", "BBDC3", "BPAC11", "SANB11", "BMGB4", "BAZA3", "PINE4", "INBR32", "BPAN4", "BRSR6"],
     color: "orange"
   },
   oil: {
     title: "Petróleo & Energia",
-    symbols: ["PETR4", "PETR3", "VALE3", "PRIO3", "VBBR3", "UGPA3", "BRAV3", "CSAN3", "RECV3", "3R11", "ELET3", "ELET6"],
+    symbols: ["PETR4", "PETR3", "PRIO3", "VBBR3", "UGPA3", "BRAV3", "CSAN3", "RECV3", "3R11", "ELET3", "ELET6", "ENAT3", "ENMT4"],
     color: "red"
   },
   mining: {
-    title: "Mineração",
-    symbols: ["VALE3", "CSNA3", "USIM5", "GOAU4", "GGBR4", "FESA4", "GERD3", "GBIO33"],
+    title: "Mineração & Siderurgia",
+    symbols: ["VALE3", "CSNA3", "USIM5", "GOAU4", "GGBR4", "FESA4", "GERD3", "GBIO33", "JFEN3", "AZUL4"],
     color: "amber"
+  },
+  retail: {
+    title: "Varejo",
+    symbols: ["LREN3", "MGLU3", "VVAR3", "AMER3", "GUAR3", "CEAB3", "CGRA4", "AMAR3", "VSTE3", "SOMA3", "HBSA3", "ALPA4", "GFSA3"],
+    color: "purple"
   },
   tech: {
     title: "Tecnologia",
-    symbols: ["MGLU3", "B3SA3", "TOTS3", "LWSA3", "TRIS3", "POSI3", "CASH3", "MELI34"],
+    symbols: ["MGLU3", "B3SA3", "TOTS3", "LWSA3", "TRIS3", "POSI3", "CASH3", "MELI34", "ORVR3", "LOFT3"],
     color: "blue"
   },
   food: {
     title: "Alimentício",
-    symbols: ["JBSS3", "BRF3", "MRFG3", "SMTO3", "BEEF3", "CAML3", "MDIA3", "GRND3"],
+    symbols: ["JBSS3", "BRF3", "MRFG3", "SMTO3", "BEEF3", "CAML3", "MDIA3", "GRND3", "SLCE3", "DTEX3"],
     color: "green"
   },
   utilities: {
     title: "Utilities",
-    symbols: ["ELET3", "ELET6", "CPFE3", "CMIG4", "TAEE11", "NEOE3", "CEBR6", "SBSP3", "SAPR11"],
+    symbols: ["ELET3", "ELET6", "CPFE3", "CMIG4", "TAEE11", "NEOE3", "CEBR6", "SBSP3", "SAPR11", "COCE5", "CSMG3"],
     color: "cyan"
   },
   construction: {
     title: "Construção Civil",
-    symbols: ["MRVE3", "CYRE3", "EZTC3", "EVEN3", "HBOR3", "JHSF3", "TCSA3", "DIRR3"],
+    symbols: ["MRVE3", "CYRE3", "EZTC3", "EVEN3", "HBOR3", "JHSF3", "TCSA3", "DIRR3", "PDGR3", "ALSO3"],
     color: "gray"
+  },
+  healthcare: {
+    title: "Saúde",
+    symbols: ["RDOR3", "HAPV3", "ONCO3", "DASA3", "FLRY3", "AALR3", "QUAL3", "PARD3"],
+    color: "rose"
   },
   personalcare: {
     title: "Cuidados Pessoais",
-    symbols: ["NATU3", "BOBR4", "NTCO3", "PNVL3"],
+    symbols: ["NATU3", "BOBR4", "NTCO3", "PNVL3", "ABEV3", "HYPE3"],
     color: "pink"
+  },
+  telecom: {
+    title: "Telecomunicações",
+    symbols: ["VIVT3", "TIMS3", "OIBR3", "OIBR4", "TELU3"],
+    color: "indigo"
   }
 };
 

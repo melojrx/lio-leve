@@ -44,18 +44,17 @@ export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
     return `${symbol}.SA`; // Add .SA for Brazilian stocks
   });
   
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbols.join(",")}`;
+  // Use CORS proxy to access Yahoo Finance
+  const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbols.join(",")}`;
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(baseUrl)}`;
   
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
+    const res = await fetch(proxyUrl);
     
     if (!res.ok) return [];
     
-    const data = await res.json();
+    const proxyData = await res.json();
+    const data = JSON.parse(proxyData.contents);
     const results: StockQuote[] = [];
     
     if (data?.chart?.result) {
@@ -63,14 +62,17 @@ export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
         const meta = result?.meta;
         const quote = result?.indicators?.quote?.[0];
         
-        if (meta && quote) {
+        if (meta) {
           const originalSymbol = symbols[index]; // Use original symbol format
+          const currentPrice = meta.regularMarketPrice || meta.previousClose;
+          const previousClose = meta.previousClose || meta.chartPreviousClose;
+          
           results.push({
             symbol: originalSymbol,
             shortName: meta.longName || meta.shortName || originalSymbol,
-            regularMarketPrice: meta.regularMarketPrice || meta.previousClose,
-            regularMarketChangePercent: meta.regularMarketPrice && meta.previousClose 
-              ? ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
+            regularMarketPrice: currentPrice,
+            regularMarketChangePercent: currentPrice && previousClose 
+              ? ((currentPrice - previousClose) / previousClose) * 100
               : undefined,
             currency: meta.currency || "BRL",
             updatedAt: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : undefined,
