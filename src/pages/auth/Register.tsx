@@ -78,11 +78,11 @@ const Register = () => {
         <div className="hidden lg:flex items-center justify-center bg-slate-950 text-white relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-950" />
           <div className="relative z-10 text-center space-y-6">
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center space-y-4">
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/20 text-primary ring-1 ring-primary/30">
                 <LineChart className="h-8 w-8" />
               </div>
-              <div>
+              <div className="text-center">
                 <h1 className="text-4xl font-bold text-white">investorion.com.br</h1>
                 <p className="text-slate-400 text-lg">as a lifestyle</p>
               </div>
