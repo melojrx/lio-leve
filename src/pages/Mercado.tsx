@@ -39,11 +39,33 @@ function formatPct(n?: number) {
   return `${n > 0 ? "+" : ""}${formatNumber(n, 2)}%`;
 }
 
-const keyAssets = {
-  fx: ["USD/BRL", "EUR/BRL"],
-  stocks: ["^BVSP", "IFIX", "PETR4", "VALE3"],
-  crypto: ["BTC", "ETH"],
-  macro: ["CDI", "Selic", "IPCA"],
+// Definição dos ativos organizados por setor
+const marketSections = {
+  indices: {
+    title: "Índices",
+    symbols: ["^BVSP", "ICON", "IDIV", "IFIX", "IFNC", "INDX", "SMLL"],
+    color: "emerald"
+  },
+  retail: {
+    title: "Comércio Varejista",
+    symbols: ["LREN3", "CEAB3", "GUAR3", "CGRA4", "AMAR3", "CGRA3", "VSTE3"],
+    color: "purple"
+  },
+  banks: {
+    title: "Bancos",
+    symbols: ["BBAS3", "ITSA4", "ITUB4", "BBDC4", "BPAC11", "INBR32", "BBDC3"],
+    color: "orange"
+  },
+  oil: {
+    title: "Petróleo",
+    symbols: ["PETR4", "VBBR3", "PETR3", "PRIO3", "UGPA3", "BRAV3", "CSAN3"],
+    color: "red"
+  },
+  personalcare: {
+    title: "Cuidados Pessoais",
+    symbols: ["NATU3", "BOBR4"],
+    color: "green"
+  }
 };
 
 const bcbSeries = [
@@ -56,16 +78,21 @@ export default function Mercado() {
   const [q, setQ] = useState("");
   const { favs, toggle } = useFavorites();
 
+  // Obter todos os símbolos de ações
+  const allStockSymbols = useMemo(() => {
+    return Object.values(marketSections).flatMap(section => section.symbols);
+  }, []);
+
   // FX – 10s
   const fxQuery = useQuery({
-    queryKey: ["fx", keyAssets.fx],
+    queryKey: ["fx", ["USD-BRL", "EUR-BRL"]],
     queryFn: () => fetchFX(["USD-BRL", "EUR-BRL"]),
     refetchInterval: 10_000,
   });
 
   // Crypto – 10s
   const cryptoQuery = useQuery({
-    queryKey: ["crypto", keyAssets.crypto],
+    queryKey: ["crypto", ["BTC", "ETH"]],
     queryFn: async () => {
       const prices = await getSimplePricesBRL(["bitcoin", "ethereum"]);
       return [
@@ -76,11 +103,11 @@ export default function Mercado() {
     refetchInterval: 10_000,
   });
 
-  // Stocks/Índices – 45s
+  // Stocks/Índices – 30s
   const stocksQuery = useQuery({
-    queryKey: ["stocks", keyAssets.stocks],
-    queryFn: () => fetchStocks(["^BVSP", "IFIX", "PETR4", "VALE3"]),
-    refetchInterval: 45_000,
+    queryKey: ["stocks", allStockSymbols],
+    queryFn: () => fetchStocks(allStockSymbols),
+    refetchInterval: 30_000,
   });
 
   // Macro (BCB/SGS) – 60s
@@ -92,38 +119,18 @@ export default function Mercado() {
 
   const isLoading = fxQuery.isLoading || cryptoQuery.isLoading || stocksQuery.isLoading || macroQuery.isLoading;
 
-  const rows = useMemo(() => {
-    const list: { key: string; label: string; value?: number | string; changePct?: number; group: string }[] = [];
-
-    // FX
-    fxQuery.data?.forEach((f) => {
-      list.push({ key: f.pair, label: f.pair, value: f.bid, changePct: f.pctChange, group: "Câmbio" });
+  // Organizar dados por seção
+  const sectionData = useMemo(() => {
+    const data: Record<string, any[]> = {};
+    
+    Object.entries(marketSections).forEach(([sectionKey, section]) => {
+      data[sectionKey] = stocksQuery.data?.filter(stock => 
+        section.symbols.includes(stock.symbol)
+      ) || [];
     });
 
-    // Stocks
-    stocksQuery.data?.forEach((s) => {
-      list.push({ key: s.symbol, label: s.shortName || s.symbol, value: s.regularMarketPrice, changePct: s.regularMarketChangePercent, group: "Ações/Índices" });
-    });
-
-    // Macro
-    macroQuery.data?.forEach((m) => {
-      list.push({ key: m.name, label: m.name, value: m.value, group: "Juros/Inflação" });
-    });
-
-    // Crypto
-    cryptoQuery.data?.forEach((c) => {
-      list.push({ key: c.symbol, label: c.symbol, value: c.price, group: "Cripto" });
-    });
-
-    return list;
-  }, [fxQuery.data, stocksQuery.data, macroQuery.data, cryptoQuery.data]);
-
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    const base = term ? rows.filter((r) => r.key.toLowerCase().includes(term) || r.label.toLowerCase().includes(term) || r.group.toLowerCase().includes(term)) : rows;
-    // Ordena: favoritos primeiro
-    return base.sort((a, b) => Number(favs.includes(b.key)) - Number(favs.includes(a.key)) || a.label.localeCompare(b.label));
-  }, [rows, q, favs]);
+    return data;
+  }, [stocksQuery.data]);
 
   const refreshAll = () => {
     fxQuery.refetch();
@@ -132,138 +139,233 @@ export default function Mercado() {
     macroQuery.refetch();
   };
 
+  const renderSectionTable = (sectionKey: string, sectionConfig: any, data: any[]) => {
+    if (!data.length && !isLoading) return null;
+
+    return (
+      <Card key={sectionKey} className="overflow-hidden">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full bg-${sectionConfig.color}-500`}></div>
+              {sectionConfig.title}
+            </CardTitle>
+            <Badge variant="outline" className="text-xs">
+              {isLoading ? "..." : `${data.length} ativos`}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-none">
+                  <TableHead className="font-medium text-xs text-muted-foreground">Ativo</TableHead>
+                  <TableHead className="font-medium text-xs text-muted-foreground text-right">Preço</TableHead>
+                  <TableHead className="font-medium text-xs text-muted-foreground text-right">Variação</TableHead>
+                  <TableHead className="font-medium text-xs text-muted-foreground text-right">Volume</TableHead>
+                  <TableHead className="font-medium text-xs text-muted-foreground text-right">Var. 12m</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`} className="border-none">
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  data.map((item) => (
+                    <TableRow key={item.symbol} className="border-none hover:bg-muted/30">
+                      <TableCell className="font-medium text-sm py-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggle(item.symbol)}
+                            aria-label={favs.includes(item.symbol) ? "Remover dos favoritos" : "Favoritar"}
+                            className="inline-flex items-center justify-center opacity-60 hover:opacity-100"
+                          >
+                            <Star className={cn("h-3 w-3", favs.includes(item.symbol) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground")} />
+                          </button>
+                          {item.symbol}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right text-sm py-2">
+                        {formatNumber(item.regularMarketPrice, 2)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm py-2">
+                        {item.regularMarketChangePercent !== undefined ? (
+                          <span className={cn(
+                            "font-medium",
+                            item.regularMarketChangePercent >= 0 ? "text-green-600" : "text-red-600"
+                          )}>
+                            {formatPct(item.regularMarketChangePercent)}
+                          </span>
+                        ) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground py-2">
+                        {item.regularMarketVolume ? (
+                          `${(item.regularMarketVolume / 1000000).toFixed(1)}M`
+                        ) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right text-sm py-2">
+                        {item.fiftyTwoWeekChangePercent !== undefined ? (
+                          <span className={cn(
+                            "font-medium",
+                            item.fiftyTwoWeekChangePercent >= 0 ? "text-green-600" : "text-red-600"
+                          )}>
+                            {formatPct(item.fiftyTwoWeekChangePercent)}
+                          </span>
+                        ) : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <>
-      <SEO title="Mercado – Cotações em Tempo Real" description="Cotações em tempo real: câmbio, ações, índices, juros, inflação e cripto." canonical="/mercado" />
-      <main className="container py-8">
-        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">Mercado – Cotações em Tempo Real</h1>
+      <SEO title="Mercado – Cotações em Tempo Real" description="Cotações em tempo real organizadas por setores: índices, bancos, petróleo, varejo e mais." canonical="/mercado" />
+      <main className="container py-8 space-y-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Mercado</h1>
+            <p className="text-muted-foreground">Cotações em tempo real por setores</p>
+          </div>
           <div className="flex gap-2">
-            <Input placeholder="Buscar ativo, grupo ou código" value={q} onChange={(e) => setQ(e.target.value)} className="w-64" />
+            <Input 
+              placeholder="Buscar ativo..." 
+              value={q} 
+              onChange={(e) => setQ(e.target.value)} 
+              className="w-64" 
+            />
             <Button variant="outline" onClick={refreshAll} aria-label="Atualizar">
               <RefreshCcw className="h-4 w-4" />
             </Button>
           </div>
         </header>
 
-        {/* Cards principais */}
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8">
-          {/* FX cards */}
-          {isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <Card key={`sk-${i}`}>
-                <CardHeader className="pb-2"><Skeleton className="h-5 w-32" /></CardHeader>
-                <CardContent className="pt-0 space-y-2">
-                  <Skeleton className="h-8 w-24" />
-                  <Skeleton className="h-4 w-16" />
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <>
-              {fxQuery.data?.map((f) => (
-                <Card key={f.pair}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{f.pair}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="flex items-baseline justify-between">
-                      <div className="text-2xl font-semibold">R$ {formatNumber(f.bid, 4)}</div>
-                      {f.pctChange !== undefined && (
-                        <Badge variant={f.pctChange >= 0 ? "default" : "secondary"} className={cn(f.pctChange >= 0 ? "text-green-600" : "text-red-600")}>{formatPct(f.pctChange)}</Badge>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">Atualizado: {f.updatedAt || "-"}</p>
-                  </CardContent>
-                </Card>
-              ))}
+        {/* Seção de Macros (BCB) */}
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                Macros
+              </CardTitle>
+              <Badge variant="outline" className="text-xs">
+                Indicadores econômicos
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={`macro-skeleton-${i}`} className="text-center space-y-2">
+                    <Skeleton className="h-5 w-16 mx-auto" />
+                    <Skeleton className="h-8 w-20 mx-auto" />
+                    <Skeleton className="h-4 w-24 mx-auto" />
+                  </div>
+                ))
+              ) : (
+                macroQuery.data?.map((m) => (
+                  <div key={m.name} className="text-center space-y-1">
+                    <div className="font-medium text-sm text-muted-foreground">{m.name}</div>
+                    <div className="text-2xl font-bold">{formatNumber(m.value, 2)}%</div>
+                    <div className="text-xs text-muted-foreground">Ref: {m.date || "-"}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-              {/* Stocks highlights */}
-              {stocksQuery.data?.filter((s) => keyAssets.stocks.includes(s.symbol)).map((s) => (
-                <Card key={s.symbol}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{s.shortName || s.symbol}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="flex items-baseline justify-between">
-                      <div className="text-2xl font-semibold">{s.currency === "BRL" ? "R$ " : ""}{formatNumber(s.regularMarketPrice)}</div>
-                      {s.regularMarketChangePercent !== undefined && (
-                        <Badge variant={s.regularMarketChangePercent >= 0 ? "default" : "secondary"} className={cn(s.regularMarketChangePercent >= 0 ? "text-green-600" : "text-red-600")}>{formatPct(s.regularMarketChangePercent)}</Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Macro */}
-              {macroQuery.data?.map((m) => (
-                <Card key={m.name}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{m.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="text-2xl font-semibold">{formatNumber(m.value)} <span className="text-sm font-normal text-muted-foreground">{m.unit}</span></div>
-                    <p className="mt-2 text-xs text-muted-foreground">Referência: {m.date || "-"}</p>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Crypto */}
-              {cryptoQuery.data?.map((c) => (
-                <Card key={c.symbol}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{c.symbol}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="text-2xl font-semibold">R$ {formatNumber(c.price)}</div>
-                  </CardContent>
-                </Card>
-              ))}
-            </>
+        {/* Seções de Ações por Setor */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {Object.entries(marketSections).map(([sectionKey, sectionConfig]) => 
+            renderSectionTable(sectionKey, sectionConfig, sectionData[sectionKey] || [])
           )}
-        </section>
+        </div>
 
-        {/* Tabela completa */}
-        <section>
-          <div className="rounded-lg border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead></TableHead>
-                  <TableHead>Ativo</TableHead>
-                  <TableHead>Grupo</TableHead>
-                  <TableHead className="text-right">Preço/Valor</TableHead>
-                  <TableHead className="text-right">Variação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r) => (
-                  <TableRow key={r.key} className="hover:bg-muted/30">
-                    <TableCell className="w-10">
-                      <button
-                        onClick={() => toggle(r.key)}
-                        aria-label={favs.includes(r.key) ? "Remover dos favoritos" : "Favoritar"}
-                        className="inline-flex items-center justify-center"
-                      >
-                        <Star className={cn("h-4 w-4", favs.includes(r.key) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground")} />
-                      </button>
-                    </TableCell>
-                    <TableCell className="font-medium">{r.label}</TableCell>
-                    <TableCell className="text-muted-foreground">{r.group}</TableCell>
-                    <TableCell className="text-right">{typeof r.value === "number" ? (r.group === "Juros/Inflação" ? `${formatNumber(r.value)} %` : `R$ ${formatNumber(r.value)}`) : r.value || "-"}</TableCell>
-                    <TableCell className="text-right">
-                      {r.changePct !== undefined ? (
-                        <span className={cn(r.changePct >= 0 ? "text-green-600" : "text-red-600")}>{formatPct(r.changePct)}</span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
+        {/* Câmbio e Cripto */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Câmbio */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+                Câmbio
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoading ? (
+                Array.from({ length: 2 }).map((_, i) => (
+                  <div key={`fx-skeleton-${i}`} className="flex justify-between items-center">
+                    <Skeleton className="h-5 w-20" />
+                    <div className="text-right space-y-1">
+                      <Skeleton className="h-6 w-16 ml-auto" />
+                      <Skeleton className="h-4 w-12 ml-auto" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                fxQuery.data?.map((f) => (
+                  <div key={f.pair} className="flex justify-between items-center">
+                    <div className="font-medium">{f.pair}</div>
+                    <div className="text-right">
+                      <div className="font-semibold">R$ {formatNumber(f.bid, 4)}</div>
+                      {f.pctChange !== undefined && (
+                        <div className={cn(
+                          "text-sm font-medium",
+                          f.pctChange >= 0 ? "text-green-600" : "text-red-600"
+                        )}>
+                          {formatPct(f.pctChange)}
+                        </div>
                       )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Cripto */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                Criptomoedas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoading ? (
+                Array.from({ length: 2 }).map((_, i) => (
+                  <div key={`crypto-skeleton-${i}`} className="flex justify-between items-center">
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-6 w-20 ml-auto" />
+                  </div>
+                ))
+              ) : (
+                cryptoQuery.data?.map((c) => (
+                  <div key={c.symbol} className="flex justify-between items-center">
+                    <div className="font-medium">{c.symbol}</div>
+                    <div className="font-semibold">R$ {formatNumber(c.price)}</div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </main>
 
       {/* Structured data */}
@@ -272,7 +374,7 @@ export default function Mercado() {
           '@context': 'https://schema.org',
           '@type': 'WebPage',
           name: 'Mercado – Cotações em Tempo Real',
-          description: 'Cotações em tempo real: câmbio, ações, índices, juros, inflação e cripto.',
+          description: 'Cotações em tempo real organizadas por setores: índices, bancos, petróleo, varejo e mais.',
           url: typeof window !== 'undefined' ? window.location.href : 'https://investorion.com.br/mercado',
         })}
       </script>
