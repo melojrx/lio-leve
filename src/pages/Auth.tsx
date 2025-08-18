@@ -39,7 +39,7 @@ const Auth = () => {
             <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
               <TrendingUp className="w-7 h-7 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl font-bold text-foreground">Investorion</h1>
+            <h1 className="text-4xl font-bold text-foreground">investorion.com.br</h1>
           </div>
           <p className="text-xl text-muted-foreground font-light">
             Your wallet, total clarity
@@ -56,7 +56,7 @@ const Auth = () => {
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-primary-foreground" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground">Investorion</h1>
+              <h1 className="text-2xl font-bold text-foreground">investorion.com.br</h1>
             </div>
             <p className="text-muted-foreground">Your wallet, total clarity</p>
           </div>
