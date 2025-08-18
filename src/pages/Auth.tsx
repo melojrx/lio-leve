@@ -41,9 +41,11 @@ const Auth = () => {
             </div>
             <h1 className="text-4xl font-bold text-foreground">investorion.com.br</h1>
           </div>
-          <p className="text-xl text-muted-foreground font-light">
-            Your wallet, total clarity
-          </p>
+          <div className="text-right space-y-3">
+            <p className="text-xl text-muted-foreground font-light">
+              Your wallet, total clarity
+            </p>
+          </div>
         </div>
       </div>
 
@@ -58,7 +60,7 @@ const Auth = () => {
               </div>
               <h1 className="text-2xl font-bold text-foreground">investorion.com.br</h1>
             </div>
-            <p className="text-muted-foreground">Your wallet, total clarity</p>
+            <p className="text-muted-foreground text-right">Your wallet, total clarity</p>
           </div>
 
           <div className="space-y-6">
