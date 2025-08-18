@@ -56,8 +56,6 @@ async function fetchYahooFinance(symbols: string[]): Promise<StockQuote[]> {
   
   for (const proxyUrl of proxies) {
     try {
-      console.log(`Tentando Yahoo Finance via: ${proxyUrl.includes('allorigins') ? 'AllOrigins' : proxyUrl.includes('herokuapp') ? 'CORS Anywhere' : proxyUrl.includes('codetabs') ? 'CodeTabs' : 'Direto'}`);
-      
       const response = await fetch(proxyUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -76,8 +74,6 @@ async function fetchYahooFinance(symbols: string[]): Promise<StockQuote[]> {
       }
       
       if (data?.quoteResponse?.result?.length > 0) {
-        console.log(`✓ Yahoo Finance funcionou via ${proxyUrl.includes('allorigins') ? 'AllOrigins' : proxyUrl.includes('herokuapp') ? 'CORS Anywhere' : proxyUrl.includes('codetabs') ? 'CodeTabs' : 'Direto'}`);
-        
         return data.quoteResponse.result.map((quote: any) => ({
           symbol: symbols[correctedSymbols.indexOf(quote.symbol)] || quote.symbol.replace('.SA', ''),
           shortName: quote.shortName || quote.longName || quote.symbol,
@@ -90,12 +86,10 @@ async function fetchYahooFinance(symbols: string[]): Promise<StockQuote[]> {
         }));
       }
     } catch (error) {
-      console.warn(`Proxy falhou: ${error}`);
       continue;
     }
   }
   
-  console.error('Todos os proxies do Yahoo Finance falharam');
   return [];
 }
 
@@ -116,8 +110,6 @@ async function fetchBrapiFallback(symbols: string[]): Promise<StockQuote[]> {
   
   for (const apiUrl of apiConfigs) {
     try {
-      console.log(`Tentando Brapi.dev: ${apiUrl.includes('?token=demo') ? 'com token demo' : apiUrl.includes('?token=') ? 'com token vazio' : 'sem token'}`);
-      
       const response = await fetch(apiUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -126,15 +118,12 @@ async function fetchBrapiFallback(symbols: string[]): Promise<StockQuote[]> {
       });
       
       if (!response.ok) {
-        console.warn(`Brapi retornou ${response.status}: ${response.statusText}`);
         continue;
       }
       
       const data = await response.json();
       
       if (data?.results?.length > 0) {
-        console.log(`✓ Brapi.dev funcionou ${apiUrl.includes('?token=demo') ? 'com token demo' : apiUrl.includes('?token=') ? 'com token vazio' : 'sem token'}`);
-        
         return data.results.map((quote: any) => ({
           symbol: quote.symbol,
           shortName: quote.shortName || quote.longName || quote.symbol,
@@ -147,12 +136,10 @@ async function fetchBrapiFallback(symbols: string[]): Promise<StockQuote[]> {
         }));
       }
     } catch (error) {
-      console.warn(`Configuração Brapi falhou: ${error}`);
       continue;
     }
   }
   
-  console.error('Todas as configurações do Brapi.dev falharam');
   return [];
 }
 
@@ -163,8 +150,6 @@ async function fetchAlternativeAPIs(symbols: string[]): Promise<StockQuote[]> {
   
   // API alternativa: HG Finance (gratuita brasileira)
   try {
-    console.log('Tentando HG Finance Brasil como alternativa...');
-    
     // HG Finance aceita múltiplos símbolos
     const symbolsStr = stockSymbols.join(',');
     const response = await fetch(`https://api.hgbrasil.com/finance/stock_price?key=free&symbol=${symbolsStr}`);
@@ -172,8 +157,6 @@ async function fetchAlternativeAPIs(symbols: string[]): Promise<StockQuote[]> {
     if (response.ok) {
       const data = await response.json();
       if (data?.results?.stocks) {
-        console.log('✓ HG Finance Brasil funcionou!');
-        
         return Object.values(data.results.stocks).map((stock: any) => ({
           symbol: stock.symbol,
           shortName: stock.name || stock.symbol,
@@ -186,11 +169,10 @@ async function fetchAlternativeAPIs(symbols: string[]): Promise<StockQuote[]> {
       }
     }
   } catch (error) {
-    console.warn('HG Finance falhou:', error);
+    // Fail silently
   }
   
   // Se tudo falhar, retorna dados mock para desenvolvimento
-  console.warn('⚠️ Usando dados mock para desenvolvimento');
   return stockSymbols.slice(0, 5).map(symbol => ({
     symbol,
     shortName: `${symbol} - Mock Data`,
@@ -205,8 +187,6 @@ async function fetchAlternativeAPIs(symbols: string[]): Promise<StockQuote[]> {
 export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
   if (!symbols.length) return [];
   
-  console.log(`🚀 Iniciando busca para ${symbols.length} símbolos...`);
-  
   // Dividir símbolos em lotes de 10 para evitar URLs muito longas
   const batchSize = 10;
   const batches = [];
@@ -219,8 +199,6 @@ export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
   // Processar lotes em paralelo com estratégia cascata
   await Promise.all(
     batches.map(async (batch, index) => {
-      console.log(`📦 Processando lote ${index + 1}/${batches.length}: [${batch.join(', ')}]`);
-      
       let batchResults: StockQuote[] = [];
       
       try {
@@ -228,50 +206,39 @@ export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
         batchResults = await fetchYahooFinance(batch);
         
         if (batchResults.length > 0) {
-          console.log(`✓ Lote ${index + 1}: Yahoo Finance retornou ${batchResults.length} resultados`);
           allResults.push(...batchResults);
           return;
         }
         
         // 2. Fallback para Brapi.dev
-        console.log(`⚠️ Lote ${index + 1}: Yahoo Finance falhou, tentando Brapi.dev...`);
         batchResults = await fetchBrapiFallback(batch);
         
         if (batchResults.length > 0) {
-          console.log(`✓ Lote ${index + 1}: Brapi.dev retornou ${batchResults.length} resultados`);
           allResults.push(...batchResults);
           return;
         }
         
         // 3. Último recurso: APIs alternativas
-        console.log(`⚠️ Lote ${index + 1}: Brapi.dev falhou, tentando APIs alternativas...`);
         batchResults = await fetchAlternativeAPIs(batch);
         
         if (batchResults.length > 0) {
-          console.log(`✓ Lote ${index + 1}: API alternativa retornou ${batchResults.length} resultados`);
           allResults.push(...batchResults);
-        } else {
-          console.error(`❌ Lote ${index + 1}: Todas as APIs falharam para [${batch.join(', ')}]`);
         }
         
       } catch (error) {
-        console.error(`❌ Erro crítico no lote ${index + 1} [${batch.join(', ')}]:`, error);
-        
         // Último recurso: tentar APIs alternativas mesmo com erro
         try {
           batchResults = await fetchAlternativeAPIs(batch);
           if (batchResults.length > 0) {
-            console.log(`🩹 Lote ${index + 1}: Recuperado com API alternativa`);
             allResults.push(...batchResults);
           }
         } catch (lastError) {
-          console.error(`💥 Lote ${index + 1}: Falha total`, lastError);
+          // Fail silently
         }
       }
     })
   );
   
-  console.log(`🎯 Busca finalizada: ${allResults.length} cotações obtidas de ${symbols.length} símbolos solicitados`);
   return allResults;
 }
 
