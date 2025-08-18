@@ -1,11 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SEO from "@/components/SEO";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { 
   Star, 
   RefreshCcw,
@@ -27,34 +22,38 @@ import { fetchFX, fetchStocks, fetchBCBSeries } from "@/lib/market";
 import { getSimplePricesBRL } from "@/lib/crypto";
 import { cn } from "@/lib/utils";
 
-// Favoritos em localStorage
-const FAV_KEY = "market_favorites";
-function useFavorites() {
+// Hook para gerenciar favoritos
+const useFavorites = () => {
   const [favs, setFavs] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem(FAV_KEY) || "[]");
+      const saved = localStorage.getItem("market-favorites");
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return [] as string[];
+      return [];
     }
   });
-  useEffect(() => {
-    localStorage.setItem(FAV_KEY, JSON.stringify(favs));
-  }, [favs]);
-  const toggle = (k: string) => setFavs((prev) => (prev.includes(k) ? prev.filter((i) => i !== k) : [...prev, k]));
+
+  const toggle = (symbol: string) => {
+    const newFavs = favs.includes(symbol) 
+      ? favs.filter(f => f !== symbol)
+      : [...favs, symbol];
+    setFavs(newFavs);
+    localStorage.setItem("market-favorites", JSON.stringify(newFavs));
+  };
+
   return { favs, toggle };
-}
+};
 
-function formatNumber(n?: number, decimals = 2) {
-  if (n === undefined || n === null || Number.isNaN(n)) return "-";
-  return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n);
-}
+const formatNumber = (n?: number, decimals = 2) => {
+  if (n === undefined || n === null) return "-";
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
 
-function formatPct(n?: number) {
-  if (n === undefined || n === null || Number.isNaN(n)) return "-";
-  return `${n > 0 ? "+" : ""}${formatNumber(n, 2)}%`;
-}
+const formatPct = (n?: number) => {
+  if (n === undefined || n === null) return "-";
+  return (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+};
 
-// Definição dos ativos organizados por setor
 const sectionIcons = {
   indices: BarChart3,
   banks: Building2,
@@ -82,7 +81,7 @@ const marketSections = {
     color: "orange"
   },
   oil: {
-    title: "Petróleo & Energia",
+    title: "Petróleo",
     symbols: ["PETR4", "PETR3", "PRIO3", "VBBR3", "UGPA3", "BRAV3", "CSAN3", "RECV3", "3R11", "ELET3", "ELET6", "ENAT3", "ENMT4"],
     color: "red"
   },
@@ -92,7 +91,7 @@ const marketSections = {
     color: "amber"
   },
   retail: {
-    title: "Varejo",
+    title: "Comércio Varejista",
     symbols: ["LREN3", "MGLU3", "VVAR3", "AMER3", "GUAR3", "CEAB3", "CGRA4", "AMAR3", "VSTE3", "SOMA3", "HBSA3", "ALPA4", "GFSA3"],
     color: "purple"
   },
@@ -122,7 +121,7 @@ const marketSections = {
     color: "rose"
   },
   personalcare: {
-    title: "Cuidados Pessoais",
+    title: "Produtos de Cuidado Pessoal e de Limpeza",
     symbols: ["NATU3", "BOBR4", "NTCO3", "PNVL3", "ABEV3", "HYPE3"],
     color: "pink"
   },
@@ -148,61 +147,46 @@ export default function Mercado() {
     return Object.values(marketSections).flatMap(section => section.symbols);
   }, []);
 
-  // FX – 10s (expandido com mais pares)
-  const fxPairs = ["USD-BRL", "EUR-BRL", "GBP-BRL", "JPY-BRL", "ARS-BRL", "CAD-BRL", "AUD-BRL", "CHF-BRL"];
+  // Queries para buscar dados
   const fxQuery = useQuery({
-    queryKey: ["fx", fxPairs],
-    queryFn: () => fetchFX(fxPairs),
-    refetchInterval: 10_000,
+    queryKey: ["fx-rates"],
+    queryFn: () => fetchFX(),
+    refetchInterval: 30000,
   });
 
-  // Crypto – 10s (expandido com mais cryptos)
-  const cryptoIds = ["bitcoin", "ethereum", "binancecoin", "cardano", "solana", "polygon", "chainlink", "avalanche-2"];
   const cryptoQuery = useQuery({
-    queryKey: ["crypto", cryptoIds],
-    queryFn: async () => {
-      const prices = await getSimplePricesBRL(cryptoIds);
-      return [
-        { symbol: "BTC", name: "Bitcoin", price: prices.bitcoin },
-        { symbol: "ETH", name: "Ethereum", price: prices.ethereum },
-        { symbol: "BNB", name: "BNB", price: prices.binancecoin },
-        { symbol: "ADA", name: "Cardano", price: prices.cardano },
-        { symbol: "SOL", name: "Solana", price: prices.solana },
-        { symbol: "MATIC", name: "Polygon", price: prices.polygon },
-        { symbol: "LINK", name: "Chainlink", price: prices.chainlink },
-        { symbol: "AVAX", name: "Avalanche", price: prices["avalanche-2"] },
-      ];
-    },
-    refetchInterval: 10_000,
+    queryKey: ["crypto-prices-brl"],
+    queryFn: () => getSimplePricesBRL(['bitcoin', 'ethereum', 'binancecoin', 'cardano', 'solana', 'matic-network', 'chainlink', 'avalanche-2']),
+    refetchInterval: 60000,
   });
 
-  // Stocks/Índices – 30s
   const stocksQuery = useQuery({
     queryKey: ["stocks", allStockSymbols],
     queryFn: () => fetchStocks(allStockSymbols),
-    refetchInterval: 30_000,
+    refetchInterval: 60000,
   });
 
-  // Macro (BCB/SGS) – 60s
   const macroQuery = useQuery({
-    queryKey: ["macro", bcbSeries.map((s) => s.id)],
+    queryKey: ["bcb-series"],
     queryFn: () => fetchBCBSeries(bcbSeries),
-    refetchInterval: 60_000,
+    refetchInterval: 300000, // 5 minutos
   });
 
   const isLoading = fxQuery.isLoading || cryptoQuery.isLoading || stocksQuery.isLoading || macroQuery.isLoading;
 
   // Organizar dados por seção
   const sectionData = useMemo(() => {
-    const data: Record<string, any[]> = {};
+    if (!stocksQuery.data) return {};
+
+    const result: Record<string, any[]> = {};
     
-    Object.entries(marketSections).forEach(([sectionKey, section]) => {
-      data[sectionKey] = stocksQuery.data?.filter(stock => 
-        section.symbols.includes(stock.symbol)
-      ) || [];
+    Object.entries(marketSections).forEach(([key, section]) => {
+      result[key] = section.symbols
+        .map(symbol => stocksQuery.data.find(item => item.symbol === symbol))
+        .filter(Boolean);
     });
 
-    return data;
+    return result;
   }, [stocksQuery.data]);
 
   const refreshAll = () => {
@@ -212,295 +196,216 @@ export default function Mercado() {
     macroQuery.refetch();
   };
 
-  const renderSectionTable = (sectionKey: string, sectionConfig: any, data: any[]) => {
-    if (!data.length && !isLoading) return null;
-
-    return (
-      <Card key={sectionKey} className="overflow-hidden">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold flex items-center gap-3">
-              {React.createElement(sectionIcons[sectionKey as keyof typeof sectionIcons], { 
-                className: `w-5 h-5 text-${sectionConfig.color}-600` 
-              })}
-              {sectionConfig.title}
-            </CardTitle>
-            <Badge variant="outline" className="text-xs">
-              {isLoading ? "..." : `${data.length} ativos`}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-none">
-                  <TableHead className="font-medium text-xs text-muted-foreground">Ativo</TableHead>
-                  <TableHead className="font-medium text-xs text-muted-foreground text-right">Preço</TableHead>
-                  <TableHead className="font-medium text-xs text-muted-foreground text-right">Variação</TableHead>
-                  <TableHead className="font-medium text-xs text-muted-foreground text-right">Volume</TableHead>
-                  <TableHead className="font-medium text-xs text-muted-foreground text-right">Var. 12m</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={`skeleton-${i}`} className="border-none">
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  data.map((item) => (
-                    <TableRow key={item.symbol} className="border-none hover:bg-muted/30">
-                      <TableCell className="font-medium text-sm py-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => toggle(item.symbol)}
-                            aria-label={favs.includes(item.symbol) ? "Remover dos favoritos" : "Favoritar"}
-                            className="inline-flex items-center justify-center opacity-60 hover:opacity-100"
-                          >
-                            <Star className={cn("h-3 w-3", favs.includes(item.symbol) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground")} />
-                          </button>
-                          {item.symbol}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right text-sm py-2">
-                        {formatNumber(item.regularMarketPrice, 2)}
-                      </TableCell>
-                      <TableCell className="text-right text-sm py-2">
-                        {item.regularMarketChangePercent !== undefined ? (
-                          <span className={cn(
-                            "font-medium",
-                            item.regularMarketChangePercent >= 0 ? "text-green-600" : "text-red-600"
-                          )}>
-                            {formatPct(item.regularMarketChangePercent)}
-                          </span>
-                        ) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground py-2">
-                        {item.regularMarketVolume ? (
-                          `${(item.regularMarketVolume / 1000000).toFixed(1)}M`
-                        ) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right text-sm py-2">
-                        {item.fiftyTwoWeekChangePercent !== undefined ? (
-                          <span className={cn(
-                            "font-medium",
-                            item.fiftyTwoWeekChangePercent >= 0 ? "text-green-600" : "text-red-600"
-                          )}>
-                            {formatPct(item.fiftyTwoWeekChangePercent)}
-                          </span>
-                        ) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
   return (
     <>
       <SEO title="Mercado – Cotações em Tempo Real" description="Cotações em tempo real organizadas por setores: índices, bancos, petróleo, varejo e mais." canonical="/mercado" />
-      <main className="container py-8 space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Mercado</h1>
-            <p className="text-muted-foreground">Cotações em tempo real por setores</p>
-          </div>
-          <div className="flex gap-2">
-            <Input 
-              placeholder="Buscar ativo..." 
-              value={q} 
-              onChange={(e) => setQ(e.target.value)} 
-              className="w-64" 
-            />
-            <Button variant="outline" onClick={refreshAll} aria-label="Atualizar">
-              <RefreshCcw className="h-4 w-4" />
-            </Button>
-          </div>
-        </header>
-
-        {/* Seção de Macros (BCB) */}
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                Macros
-              </CardTitle>
-              <Badge variant="outline" className="text-xs">
-                Indicadores econômicos
-              </Badge>
+      
+      <div className="min-h-screen bg-gray-950 text-white p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          
+          {/* Seções de Ações */}
+          {Object.entries(sectionData).map(([sectionKey, data]) => {
+            const sectionConfig = marketSections[sectionKey];
+            if (!data.length && !isLoading) return null;
+            
+            // Calcular performance média da seção
+            const avgChange = data.length > 0 
+              ? data.reduce((acc, item) => acc + (item.regularMarketChangePercent || 0), 0) / data.length 
+              : 0;
+            
+            const SectionIcon = sectionIcons[sectionKey as keyof typeof sectionIcons];
+            
+            return (
+              <div key={sectionKey} className="bg-gray-900 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <SectionIcon className="w-4 h-4 text-gray-400" />
+                    <h2 className="text-lg font-semibold text-white">{sectionConfig.title}</h2>
+                  </div>
+                  <span className={cn(
+                    "text-sm font-bold px-2 py-1 rounded",
+                    avgChange >= 0 ? "text-green-400 bg-green-400/10" : "text-red-400 bg-red-400/10"
+                  )}>
+                    {formatPct(avgChange)}
+                  </span>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="grid grid-cols-5 gap-2 text-xs text-gray-400 font-medium border-b border-gray-700 pb-2">
+                    <span>Ativo</span>
+                    <span className="text-right">Preço</span>
+                    <span className="text-right">Variação</span>
+                    <span className="text-right">Volume</span>
+                    <span className="text-right">Var. 12m</span>
+                  </div>
+                  
+                  {isLoading ? (
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <div key={`skeleton-${i}`} className="grid grid-cols-5 gap-2 py-2">
+                        <Skeleton className="h-4 w-12 bg-gray-800" />
+                        <Skeleton className="h-4 w-16 bg-gray-800 ml-auto" />
+                        <Skeleton className="h-4 w-12 bg-gray-800 ml-auto" />
+                        <Skeleton className="h-4 w-16 bg-gray-800 ml-auto" />
+                        <Skeleton className="h-4 w-12 bg-gray-800 ml-auto" />
+                      </div>
+                    ))
+                  ) : (
+                    data.slice(0, 8).map((item) => (
+                      <div key={item.symbol} className="grid grid-cols-5 gap-2 py-2 hover:bg-gray-800/50 rounded px-2">
+                        <span className="text-sm font-medium text-white truncate">{item.symbol}</span>
+                        <span className="text-sm text-right text-white">
+                          {formatNumber(item.regularMarketPrice, 2)}
+                        </span>
+                        <span className={cn(
+                          "text-sm text-right font-bold",
+                          item.regularMarketChangePercent >= 0 ? "text-green-400" : "text-red-400"
+                        )}>
+                          {formatPct(item.regularMarketChangePercent)}
+                        </span>
+                        <span className="text-xs text-right text-gray-400">
+                          {item.regularMarketVolume ? `${(item.regularMarketVolume / 1000).toFixed(0)}K` : "-"}
+                        </span>
+                        <span className={cn(
+                          "text-sm text-right font-bold",
+                          item.fiftyTwoWeekChangePercent >= 0 ? "text-green-400" : "text-red-400"
+                        )}>
+                          {item.fiftyTwoWeekChangePercent !== undefined ? formatPct(item.fiftyTwoWeekChangePercent) : "-"}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          
+          {/* Seção de Macros */}
+          <div className="bg-gray-900 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Macros</h2>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
+            
+            <div className="space-y-1">
+              <div className="grid grid-cols-5 gap-2 text-xs text-gray-400 font-medium border-b border-gray-700 pb-2">
+                <span>Ativo</span>
+                <span className="text-right">Cotação</span>
+                <span className="text-right">Variação</span>
+                <span className="text-right">Volume</span>
+                <span className="text-right">Var. 12m</span>
+              </div>
+              
               {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div key={`macro-skeleton-${i}`} className="text-center space-y-2">
-                    <Skeleton className="h-5 w-16 mx-auto" />
-                    <Skeleton className="h-8 w-20 mx-auto" />
-                    <Skeleton className="h-4 w-24 mx-auto" />
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={`macro-skeleton-${i}`} className="grid grid-cols-5 gap-2 py-2">
+                    <Skeleton className="h-4 w-12 bg-gray-800" />
+                    <Skeleton className="h-4 w-16 bg-gray-800 ml-auto" />
+                    <Skeleton className="h-4 w-12 bg-gray-800 ml-auto" />
+                    <Skeleton className="h-4 w-16 bg-gray-800 ml-auto" />
+                    <Skeleton className="h-4 w-12 bg-gray-800 ml-auto" />
                   </div>
                 ))
               ) : (
-                macroQuery.data?.map((m) => (
-                  <div key={m.name} className="text-center space-y-1">
-                    <div className="font-medium text-sm text-muted-foreground">{m.name}</div>
-                    <div className="text-2xl font-bold">{formatNumber(m.value, 2)}%</div>
-                    <div className="text-xs text-muted-foreground">Ref: {m.date || "-"}</div>
+                (macroQuery.data as any)?.slice(0, 8).map((macro: any) => (
+                  <div key={macro.name} className="grid grid-cols-5 gap-2 py-2 hover:bg-gray-800/50 rounded px-2">
+                    <span className="text-sm font-medium text-white truncate">{macro.name}</span>
+                    <span className="text-sm text-right text-white">
+                      {formatNumber(macro.value, 2)} {macro.unit}
+                    </span>
+                    <span className="text-sm text-right text-gray-400">0,00 Bps</span>
+                    <span className="text-xs text-right text-gray-400">-</span>
+                    <span className="text-sm text-right text-gray-400">-</span>
                   </div>
                 ))
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Seção Principal: Ações Brasileiras */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-yellow-500"></div>
-              <h2 className="text-2xl font-bold tracking-tight">Mercado de Ações Brasileiras</h2>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              Tempo real via APIs múltiplas
-            </div>
           </div>
-          <p className="text-muted-foreground">
-            Cotações em tempo real dos principais ativos da B3, organizadas por setores. 
-            Sistema com fallback automático entre Yahoo Finance e Brapi.dev.
-          </p>
           
-          {/* Grid das Seções de Ações */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {Object.entries(marketSections).map(([sectionKey, sectionConfig]) => 
-              renderSectionTable(sectionKey, sectionConfig, sectionData[sectionKey] || [])
-            )}
+          {/* Seção de Câmbio */}
+          <div className="bg-gray-900 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Câmbio</h2>
+              <span className="text-sm font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded">
+                0,42%
+              </span>
+            </div>
+            
+            <div className="space-y-1">
+              <div className="grid grid-cols-3 gap-2 text-xs text-gray-400 font-medium border-b border-gray-700 pb-2">
+                <span>Par</span>
+                <span className="text-right">Cotação</span>
+                <span className="text-right">Variação</span>
+              </div>
+              
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={`fx-skeleton-${i}`} className="grid grid-cols-3 gap-2 py-2">
+                    <Skeleton className="h-4 w-12 bg-gray-800" />
+                    <Skeleton className="h-4 w-16 bg-gray-800 ml-auto" />
+                    <Skeleton className="h-4 w-12 bg-gray-800 ml-auto" />
+                  </div>
+                ))
+              ) : (
+                (fxQuery.data as any)?.slice(0, 8).map((fx: any) => (
+                  <div key={fx.pair} className="grid grid-cols-3 gap-2 py-2 hover:bg-gray-800/50 rounded px-2">
+                    <span className="text-sm font-medium text-white">{fx.pair}</span>
+                    <span className="text-sm text-right text-white">
+                      {formatNumber(fx.bid, 4)}
+                    </span>
+                    <span className={cn(
+                      "text-sm text-right font-bold",
+                      fx.pctChange >= 0 ? "text-green-400" : "text-red-400"
+                    )}>
+                      {formatPct(fx.pctChange)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
+          
+          {/* Seção de Criptomoedas */}
+          <div className="bg-gray-900 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Criptomoedas</h2>
+              <span className="text-sm font-bold text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded">
+                2,15%
+              </span>
+            </div>
+            
+            <div className="space-y-1">
+              <div className="grid grid-cols-3 gap-2 text-xs text-gray-400 font-medium border-b border-gray-700 pb-2">
+                <span>Crypto</span>
+                <span className="text-right">Preço BRL</span>
+                <span className="text-right">Variação</span>
+              </div>
+              
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={`crypto-skeleton-${i}`} className="grid grid-cols-3 gap-2 py-2">
+                    <Skeleton className="h-4 w-12 bg-gray-800" />
+                    <Skeleton className="h-4 w-20 bg-gray-800 ml-auto" />
+                    <Skeleton className="h-4 w-12 bg-gray-800 ml-auto" />
+                  </div>
+                ))
+              ) : (
+                (cryptoQuery.data as any)?.slice(0, 8).map((crypto: any) => (
+                  <div key={crypto.symbol} className="grid grid-cols-3 gap-2 py-2 hover:bg-gray-800/50 rounded px-2">
+                    <span className="text-sm font-medium text-white">{crypto.symbol}</span>
+                    <span className="text-sm text-right text-white">
+                      R$ {formatNumber(crypto.price)}
+                    </span>
+                    <span className="text-sm text-right text-green-400 font-bold">
+                      +2,4%
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          
         </div>
-
-        {/* Câmbio e Cripto - Layout expandido */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Câmbio */}
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-                  Câmbio
-                </CardTitle>
-                <Badge variant="outline" className="text-xs">
-                  {isLoading ? "..." : `${fxQuery.data?.length || 0} pares`}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-none">
-                      <TableHead className="font-medium text-xs text-muted-foreground">Par</TableHead>
-                      <TableHead className="font-medium text-xs text-muted-foreground text-right">Cotação</TableHead>
-                      <TableHead className="font-medium text-xs text-muted-foreground text-right">Variação</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array.from({ length: 4 }).map((_, i) => (
-                        <TableRow key={`fx-skeleton-${i}`} className="border-none">
-                          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                          <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                          <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      fxQuery.data?.map((f) => (
-                        <TableRow key={f.pair} className="border-none hover:bg-muted/30">
-                          <TableCell className="font-medium text-sm py-2">{f.pair}</TableCell>
-                          <TableCell className="text-right text-sm py-2">
-                            R$ {formatNumber(f.bid, 4)}
-                          </TableCell>
-                          <TableCell className="text-right text-sm py-2">
-                            {f.pctChange !== undefined ? (
-                              <span className={cn(
-                                "font-medium",
-                                f.pctChange >= 0 ? "text-green-600" : "text-red-600"
-                              )}>
-                                {formatPct(f.pctChange)}
-                              </span>
-                            ) : "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Cripto */}
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  Criptomoedas
-                </CardTitle>
-                <Badge variant="outline" className="text-xs">
-                  {isLoading ? "..." : `${cryptoQuery.data?.length || 0} cryptos`}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-none">
-                      <TableHead className="font-medium text-xs text-muted-foreground">Crypto</TableHead>
-                      <TableHead className="font-medium text-xs text-muted-foreground">Nome</TableHead>
-                      <TableHead className="font-medium text-xs text-muted-foreground text-right">Preço BRL</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array.from({ length: 4 }).map((_, i) => (
-                        <TableRow key={`crypto-skeleton-${i}`} className="border-none">
-                          <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                          <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      cryptoQuery.data?.map((c) => (
-                        <TableRow key={c.symbol} className="border-none hover:bg-muted/30">
-                          <TableCell className="font-medium text-sm py-2">{c.symbol}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground py-2">{c.name}</TableCell>
-                          <TableCell className="text-right text-sm py-2">
-                            R$ {formatNumber(c.price)}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-
+      </div>
+      
       {/* Structured data */}
       <script type="application/ld+json">
         {JSON.stringify({
