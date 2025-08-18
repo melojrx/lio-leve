@@ -44,7 +44,7 @@ const Index = () => {
             dados em tempo real.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link to="/login">
+            <Link to="/cadastro">
               <Button variant="hero" radius="pill" size="xl" className="w-full sm:w-auto">
                 Começar grátis
                 <ArrowRight className="ml-1" />
@@ -93,7 +93,7 @@ const Index = () => {
               <p className="mt-2 text-muted-foreground">Crie sua conta em minutos e importe suas transações.</p>
             </div>
             <div className="flex gap-3">
-              <Link to="/login"><Button size="lg" radius="pill">Criar conta</Button></Link>
+              <Link to="/cadastro"><Button size="lg" radius="pill">Criar conta</Button></Link>
               <Link to="/login"><Button variant="outline" size="lg" radius="pill">Entrar</Button></Link>
             </div>
           </div>

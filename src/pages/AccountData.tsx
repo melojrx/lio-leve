@@ -5,7 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
 import { ShieldCheck, UserCog, KeyRound } from "lucide-react";
@@ -26,27 +28,51 @@ type PasswordForm = {
 };
 
 const AccountData = () => {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") || "perfil";
   const [activeTab, setActiveTab] = useState<string>(tabParam);
 
+  useEffect(() => {
+    setActiveTab(tabParam);
+  }, [tabParam]);
+
+  const defaultValues = useMemo<ProfileForm>(() => {
+    const meta = (user?.user_metadata as Record<string, any>) || {};
+    return {
+      fullName: meta.fullName || meta.name || "",
+      cpf: meta.cpf || "",
+      phone: meta.phone || "",
+      birthDate: meta.birthDate || "",
+    };
+  }, [user]);
+
   const form = useForm<ProfileForm>({
-    defaultValues: {
-      fullName: "",
-      cpf: "",
-      phone: "",
-      birthDate: "",
-    },
+    defaultValues,
     mode: "onChange",
   });
 
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [defaultValues]);
+
   const onSubmitProfile = async (values: ProfileForm) => {
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        fullName: values.fullName,
+        cpf: values.cpf,
+        phone: values.phone,
+        birthDate: values.birthDate,
+      },
+    });
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message });
+      return;
+    }
     toast({ title: "Perfil atualizado", description: "Seus dados foram salvos com sucesso." });
   };
 
-  const pwdForm = useForm<PasswordForm>({ 
-    defaultValues: { newPassword: "", confirmPassword: "" } 
-  });
+  const pwdForm = useForm<PasswordForm>({ defaultValues: { newPassword: "", confirmPassword: "" } });
 
   const validatePassword = (pwd: string) => {
     const rules = [
@@ -69,6 +95,11 @@ const AccountData = () => {
       return;
     }
 
+    const { error } = await supabase.auth.updateUser({ password: values.newPassword });
+    if (error) {
+      toast({ title: "Erro ao alterar senha", description: error.message });
+      return;
+    }
     toast({ title: "Senha alterada", description: "Sua senha foi atualizada." });
     pwdForm.reset();
   };
@@ -80,8 +111,13 @@ const AccountData = () => {
     setSearchParams(params, { replace: true });
   };
 
-  const displayName = "Investidor";
-  const since = new Date().toLocaleDateString("pt-BR");
+  const displayName =
+    (user?.user_metadata?.fullName as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email?.split("@")[0] ||
+    "Investidor";
+
+  const since = user?.created_at ? new Date(user.created_at).toLocaleDateString("pt-BR") : "—";
 
   return (
     <div className="min-h-screen">
@@ -160,7 +196,7 @@ const AccountData = () => {
                       <div className="grid gap-6 sm:grid-cols-2">
                         <div className="space-y-2">
                           <Label>E-mail</Label>
-                          <Input value="usuario@exemplo.com" readOnly />
+                          <Input value={user?.email ?? ""} readOnly />
                           <p className="text-xs text-muted-foreground">O e-mail é gerenciado pela autenticação e não pode ser alterado aqui.</p>
                         </div>
                         <FormField
