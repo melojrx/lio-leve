@@ -13,6 +13,7 @@ import { ThemeProvider } from "next-themes";
 import AssetDetails from "./pages/AssetDetails";
 import AccountData from "./pages/AccountData";
 import Mercado from "./pages/Mercado";
+import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,8 @@ const App = () => (
           <Route path="/ajuda" element={<AppShell><Help /></AppShell>} />
           <Route path="/conta" element={<AppShell><Account /></AppShell>} />
           <Route path="/conta/dados" element={<AppShell><AccountData /></AppShell>} />
+          <Route path="/login" element={<Auth />} />
+          <Route path="/cadastro" element={<Auth />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<AppShell><NotFound /></AppShell>} />
         </Routes>
