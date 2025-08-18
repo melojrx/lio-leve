@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import SEO from "@/components/SEO";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Star, RefreshCcw } from "lucide-react";
+import { 
+  Star, 
+  RefreshCcw,
+  BarChart3,
+  Building2,
+  Fuel,
+  Pickaxe,
+  ShoppingCart,
+  Laptop,
+  Utensils,
+  Zap,
+  HardHat,
+  Heart,
+  Sparkles,
+  Smartphone
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFX, fetchStocks, fetchBCBSeries } from "@/lib/market";
 import { getSimplePricesBRL } from "@/lib/crypto";
@@ -40,6 +55,21 @@ function formatPct(n?: number) {
 }
 
 // Definição dos ativos organizados por setor
+const sectionIcons = {
+  indices: BarChart3,
+  banks: Building2,
+  oil: Fuel,
+  mining: Pickaxe,
+  retail: ShoppingCart,
+  tech: Laptop,
+  food: Utensils,
+  utilities: Zap,
+  construction: HardHat,
+  healthcare: Heart,
+  personalcare: Sparkles,
+  telecom: Smartphone,
+};
+
 const marketSections = {
   indices: {
     title: "Índices",
@@ -189,8 +219,10 @@ export default function Mercado() {
       <Card key={sectionKey} className="overflow-hidden">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full bg-${sectionConfig.color}-500`}></div>
+            <CardTitle className="text-lg font-semibold flex items-center gap-3">
+              {React.createElement(sectionIcons[sectionKey as keyof typeof sectionIcons], { 
+                className: `w-5 h-5 text-${sectionConfig.color}-600` 
+              })}
               {sectionConfig.title}
             </CardTitle>
             <Badge variant="outline" className="text-xs">
