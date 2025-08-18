@@ -1,9 +1,9 @@
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
 import { UserCog, KeyRound, LifeBuoy, ShieldCheck, Info } from "lucide-react";
 import { Link } from "react-router-dom";
+
 const tiles = [
   { title: "Meu Perfil", icon: UserCog, to: "/conta/dados?tab=perfil" },
   { title: "Alterar Senha", icon: KeyRound, to: "/conta/dados?tab=senha" },
@@ -13,10 +13,8 @@ const tiles = [
 ];
 
 const Account = () => {
-  const { user } = useAuth();
-  const displayName =
-    (user?.user_metadata?.name as string | undefined) || user?.email?.split("@")[0] || "Investidor";
-  const since = user?.created_at ? new Date(user.created_at).toLocaleDateString("pt-BR") : "—";
+  const displayName = "Investidor";
+  const since = new Date().toLocaleDateString("pt-BR");
 
   return (
     <div className="min-h-screen">
