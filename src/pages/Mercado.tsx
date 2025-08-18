@@ -160,6 +160,28 @@ export default function Mercado() {
     refetchInterval: 60000,
   });
 
+  // Convert crypto data object to array format
+  const cryptoArray = useMemo(() => {
+    if (!cryptoQuery.data) return [];
+    
+    const cryptoNames: Record<string, string> = {
+      'bitcoin': 'BTC',
+      'ethereum': 'ETH', 
+      'binancecoin': 'BNB',
+      'cardano': 'ADA',
+      'solana': 'SOL',
+      'matic-network': 'MATIC',
+      'chainlink': 'LINK',
+      'avalanche-2': 'AVAX'
+    };
+
+    return Object.entries(cryptoQuery.data).map(([id, price]) => ({
+      id,
+      symbol: cryptoNames[id] || id.toUpperCase(),
+      price
+    }));
+  }, [cryptoQuery.data]);
+
   const stocksQuery = useQuery({
     queryKey: ["stocks", allStockSymbols],
     queryFn: () => fetchStocks(allStockSymbols),
@@ -388,7 +410,7 @@ export default function Mercado() {
                   </div>
                 ))
               ) : (
-                (cryptoQuery.data as any)?.slice(0, 8).map((crypto: any) => (
+                cryptoArray.slice(0, 8).map((crypto) => (
                   <div key={crypto.symbol} className="grid grid-cols-3 gap-2 py-2 hover:bg-gray-800/50 rounded px-2">
                     <span className="text-sm font-medium text-white">{crypto.symbol}</span>
                     <span className="text-sm text-right text-white">
