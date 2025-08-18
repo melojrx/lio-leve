@@ -35,7 +35,7 @@ const Auth = () => {
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:flex-1 bg-card items-center justify-center p-12">
         <div className="text-center space-y-6 max-w-md">
-          <div className="flex items-center justify-center space-x-3">
+          <div className="flex flex-col items-center justify-center space-y-3">
             <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
               <TrendingUp className="w-7 h-7 text-primary-foreground" />
             </div>
@@ -52,7 +52,7 @@ const Auth = () => {
         <div className="w-full max-w-sm space-y-8">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center space-y-3">
-            <div className="flex items-center justify-center space-x-3">
+            <div className="flex flex-col items-center justify-center space-y-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-primary-foreground" />
               </div>
