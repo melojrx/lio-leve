@@ -118,21 +118,29 @@ export default function Mercado() {
     return Object.values(marketSections).flatMap(section => section.symbols);
   }, []);
 
-  // FX – 10s
+  // FX – 10s (expandido com mais pares)
+  const fxPairs = ["USD-BRL", "EUR-BRL", "GBP-BRL", "JPY-BRL", "ARS-BRL", "CAD-BRL", "AUD-BRL", "CHF-BRL"];
   const fxQuery = useQuery({
-    queryKey: ["fx", ["USD-BRL", "EUR-BRL"]],
-    queryFn: () => fetchFX(["USD-BRL", "EUR-BRL"]),
+    queryKey: ["fx", fxPairs],
+    queryFn: () => fetchFX(fxPairs),
     refetchInterval: 10_000,
   });
 
-  // Crypto – 10s
+  // Crypto – 10s (expandido com mais cryptos)
+  const cryptoIds = ["bitcoin", "ethereum", "binancecoin", "cardano", "solana", "polygon", "chainlink", "avalanche-2"];
   const cryptoQuery = useQuery({
-    queryKey: ["crypto", ["BTC", "ETH"]],
+    queryKey: ["crypto", cryptoIds],
     queryFn: async () => {
-      const prices = await getSimplePricesBRL(["bitcoin", "ethereum"]);
+      const prices = await getSimplePricesBRL(cryptoIds);
       return [
-        { symbol: "BTC", price: prices.bitcoin },
-        { symbol: "ETH", price: prices.ethereum },
+        { symbol: "BTC", name: "Bitcoin", price: prices.bitcoin },
+        { symbol: "ETH", name: "Ethereum", price: prices.ethereum },
+        { symbol: "BNB", name: "BNB", price: prices.binancecoin },
+        { symbol: "ADA", name: "Cardano", price: prices.cardano },
+        { symbol: "SOL", name: "Solana", price: prices.solana },
+        { symbol: "MATIC", name: "Polygon", price: prices.polygon },
+        { symbol: "LINK", name: "Chainlink", price: prices.chainlink },
+        { symbol: "AVAX", name: "Avalanche", price: prices["avalanche-2"] },
       ];
     },
     refetchInterval: 10_000,
@@ -332,72 +340,112 @@ export default function Mercado() {
           )}
         </div>
 
-        {/* Câmbio e Cripto */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Câmbio e Cripto - Layout expandido */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Câmbio */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-                Câmbio
-              </CardTitle>
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+                  Câmbio
+                </CardTitle>
+                <Badge variant="outline" className="text-xs">
+                  {isLoading ? "..." : `${fxQuery.data?.length || 0} pares`}
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoading ? (
-                Array.from({ length: 2 }).map((_, i) => (
-                  <div key={`fx-skeleton-${i}`} className="flex justify-between items-center">
-                    <Skeleton className="h-5 w-20" />
-                    <div className="text-right space-y-1">
-                      <Skeleton className="h-6 w-16 ml-auto" />
-                      <Skeleton className="h-4 w-12 ml-auto" />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                fxQuery.data?.map((f) => (
-                  <div key={f.pair} className="flex justify-between items-center">
-                    <div className="font-medium">{f.pair}</div>
-                    <div className="text-right">
-                      <div className="font-semibold">R$ {formatNumber(f.bid, 4)}</div>
-                      {f.pctChange !== undefined && (
-                        <div className={cn(
-                          "text-sm font-medium",
-                          f.pctChange >= 0 ? "text-green-600" : "text-red-600"
-                        )}>
-                          {formatPct(f.pctChange)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-none">
+                      <TableHead className="font-medium text-xs text-muted-foreground">Par</TableHead>
+                      <TableHead className="font-medium text-xs text-muted-foreground text-right">Cotação</TableHead>
+                      <TableHead className="font-medium text-xs text-muted-foreground text-right">Variação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <TableRow key={`fx-skeleton-${i}`} className="border-none">
+                          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      fxQuery.data?.map((f) => (
+                        <TableRow key={f.pair} className="border-none hover:bg-muted/30">
+                          <TableCell className="font-medium text-sm py-2">{f.pair}</TableCell>
+                          <TableCell className="text-right text-sm py-2">
+                            R$ {formatNumber(f.bid, 4)}
+                          </TableCell>
+                          <TableCell className="text-right text-sm py-2">
+                            {f.pctChange !== undefined ? (
+                              <span className={cn(
+                                "font-medium",
+                                f.pctChange >= 0 ? "text-green-600" : "text-red-600"
+                              )}>
+                                {formatPct(f.pctChange)}
+                              </span>
+                            ) : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
 
           {/* Cripto */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                Criptomoedas
-              </CardTitle>
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  Criptomoedas
+                </CardTitle>
+                <Badge variant="outline" className="text-xs">
+                  {isLoading ? "..." : `${cryptoQuery.data?.length || 0} cryptos`}
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoading ? (
-                Array.from({ length: 2 }).map((_, i) => (
-                  <div key={`crypto-skeleton-${i}`} className="flex justify-between items-center">
-                    <Skeleton className="h-5 w-16" />
-                    <Skeleton className="h-6 w-20 ml-auto" />
-                  </div>
-                ))
-              ) : (
-                cryptoQuery.data?.map((c) => (
-                  <div key={c.symbol} className="flex justify-between items-center">
-                    <div className="font-medium">{c.symbol}</div>
-                    <div className="font-semibold">R$ {formatNumber(c.price)}</div>
-                  </div>
-                ))
-              )}
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-none">
+                      <TableHead className="font-medium text-xs text-muted-foreground">Crypto</TableHead>
+                      <TableHead className="font-medium text-xs text-muted-foreground">Nome</TableHead>
+                      <TableHead className="font-medium text-xs text-muted-foreground text-right">Preço BRL</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <TableRow key={`crypto-skeleton-${i}`} className="border-none">
+                          <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      cryptoQuery.data?.map((c) => (
+                        <TableRow key={c.symbol} className="border-none hover:bg-muted/30">
+                          <TableCell className="font-medium text-sm py-2">{c.symbol}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground py-2">{c.name}</TableCell>
+                          <TableCell className="text-right text-sm py-2">
+                            R$ {formatNumber(c.price)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </div>
