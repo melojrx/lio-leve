@@ -36,26 +36,61 @@ export type StockQuote = {
   updatedAt?: string;
 };
 
-export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
-  if (!symbols.length) return [];
-  
+// Função helper para buscar via Yahoo Finance com proxy CORS
+async function fetchYahooFinance(symbols: string[]): Promise<StockQuote[]> {
   try {
-    // Usar Yahoo Finance API para buscar múltiplas cotações de uma vez
-    const symbolsStr = symbols.join(',');
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsStr}`;
+    // Adicionar .SA para ações brasileiras (não índices)
+    const correctedSymbols = symbols.map(symbol => 
+      symbol.startsWith('^') ? symbol : `${symbol}.SA`
+    );
     
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+    const symbolsStr = correctedSymbols.join(',');
+    const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsStr}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`;
     
-    const data = await response.json();
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const proxyData = await response.json();
+    const data = JSON.parse(proxyData.contents);
     
     if (!data?.quoteResponse?.result) {
       throw new Error('Invalid response format');
     }
     
-    const results: StockQuote[] = data.quoteResponse.result.map((quote: any) => ({
+    return data.quoteResponse.result.map((quote: any) => ({
+      symbol: symbols[correctedSymbols.indexOf(quote.symbol)] || quote.symbol.replace('.SA', ''),
+      shortName: quote.shortName || quote.longName || quote.symbol,
+      regularMarketPrice: quote.regularMarketPrice,
+      regularMarketChangePercent: quote.regularMarketChangePercent,
+      regularMarketVolume: quote.regularMarketVolume,
+      fiftyTwoWeekChangePercent: quote.fiftyTwoWeekChangePercent,
+      currency: quote.currency || "BRL",
+      updatedAt: quote.regularMarketTime ? new Date(quote.regularMarketTime * 1000).toISOString() : undefined,
+    }));
+  } catch (error) {
+    console.error('Erro Yahoo Finance:', error);
+    return [];
+  }
+}
+
+// Função helper para fallback via Brapi.dev
+async function fetchBrapiFallback(symbols: string[]): Promise<StockQuote[]> {
+  try {
+    // Filtrar apenas ações brasileiras (não índices)
+    const stockSymbols = symbols.filter(s => !s.startsWith('^'));
+    if (stockSymbols.length === 0) return [];
+    
+    const symbolsStr = stockSymbols.join(',');
+    const response = await fetch(`https://brapi.dev/api/quote/${symbolsStr}?token=demo`);
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    
+    if (!data?.results) return [];
+    
+    return data.results.map((quote: any) => ({
       symbol: quote.symbol,
       shortName: quote.shortName || quote.longName || quote.symbol,
       regularMarketPrice: quote.regularMarketPrice,
@@ -65,12 +100,52 @@ export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
       currency: quote.currency || "BRL",
       updatedAt: quote.regularMarketTime ? new Date(quote.regularMarketTime * 1000).toISOString() : undefined,
     }));
-    
-    return results;
   } catch (error) {
-    console.error('Erro ao buscar cotações:', error);
+    console.error('Erro Brapi fallback:', error);
     return [];
   }
+}
+
+export async function fetchStocks(symbols: string[]): Promise<StockQuote[]> {
+  if (!symbols.length) return [];
+  
+  // Dividir símbolos em lotes de 15 para evitar URLs muito longas
+  const batchSize = 15;
+  const batches = [];
+  for (let i = 0; i < symbols.length; i += batchSize) {
+    batches.push(symbols.slice(i, i + batchSize));
+  }
+  
+  const allResults: StockQuote[] = [];
+  
+  // Processar lotes em paralelo
+  await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        // Tentar Yahoo Finance primeiro
+        const yahooResults = await fetchYahooFinance(batch);
+        
+        if (yahooResults.length > 0) {
+          allResults.push(...yahooResults);
+        } else {
+          // Fallback para Brapi.dev
+          const brapiResults = await fetchBrapiFallback(batch);
+          allResults.push(...brapiResults);
+        }
+      } catch (error) {
+        console.error(`Erro no lote ${batch}:`, error);
+        // Tentar fallback mesmo em caso de erro
+        try {
+          const brapiResults = await fetchBrapiFallback(batch);
+          allResults.push(...brapiResults);
+        } catch (fallbackError) {
+          console.error(`Erro no fallback ${batch}:`, fallbackError);
+        }
+      }
+    })
+  );
+  
+  return allResults;
 }
 
 export type MacroSeries = {
