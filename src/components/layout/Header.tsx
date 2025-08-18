@@ -20,10 +20,6 @@ const Header = () => {
           <Link to="/transacoes" className="hover:text-primary transition-colors">Transações</Link>
           <Link to="/configuracoes" className="hover:text-primary transition-colors">Configurações</Link>
         </nav>
-        <div className="flex items-center gap-2 max-sm:gap-1">
-          <Link to="/conta"><Button variant="outline" className="max-sm:h-9 max-sm:px-3 max-sm:text-xs">Conta</Button></Link>
-          <Link to="/dashboard"><Button variant="soft" className="max-sm:h-9 max-sm:px-3 max-sm:text-xs">Minha área</Button></Link>
-        </div>
       </div>
     </header>
   );
