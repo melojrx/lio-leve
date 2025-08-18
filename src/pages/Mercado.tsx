@@ -333,11 +333,29 @@ export default function Mercado() {
           </CardContent>
         </Card>
 
-        {/* Seções de Ações por Setor */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {Object.entries(marketSections).map(([sectionKey, sectionConfig]) => 
-            renderSectionTable(sectionKey, sectionConfig, sectionData[sectionKey] || [])
-          )}
+        {/* Seção Principal: Ações Brasileiras */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-yellow-500"></div>
+              <h2 className="text-2xl font-bold tracking-tight">Mercado de Ações Brasileiras</h2>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              Tempo real via APIs múltiplas
+            </div>
+          </div>
+          <p className="text-muted-foreground">
+            Cotações em tempo real dos principais ativos da B3, organizadas por setores. 
+            Sistema com fallback automático entre Yahoo Finance e Brapi.dev.
+          </p>
+          
+          {/* Grid das Seções de Ações */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {Object.entries(marketSections).map(([sectionKey, sectionConfig]) => 
+              renderSectionTable(sectionKey, sectionConfig, sectionData[sectionKey] || [])
+            )}
+          </div>
         </div>
 
         {/* Câmbio e Cripto - Layout expandido */}
