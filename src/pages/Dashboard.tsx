@@ -2,6 +2,7 @@ import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
+import { useReveal } from "@/hooks/useReveal";
 
 const series = {
   "1D": [
@@ -34,12 +35,13 @@ const pieData = [
 ];
 
 const Dashboard = () => {
+  const { ref: refMain, visible } = useReveal<HTMLDivElement>();
   return (
-    <div className="min-h-screen">
+    <div ref={refMain} className="min-h-screen page-shell-gradient">
       <SEO title="Dashboard — investorion.com.br" description="Resumo do seu patrimônio e desempenho." />
       <section className="container py-10 md:py-14">
         <div className="grid gap-6 md:grid-cols-3">
-          <Card className="md:col-span-2">
+          <Card className={`md:col-span-2 reveal-fade-up ${visible ? 'reveal-visible' : ''}`}>
             <CardHeader>
               <CardTitle>Patrimônio</CardTitle>
               <p className="text-sm text-muted-foreground">Hoje: +1,8%</p>
@@ -76,7 +78,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={`reveal-fade-up ${visible ? 'reveal-visible' : ''}`}>
             <CardHeader>
               <CardTitle>Composição</CardTitle>
             </CardHeader>
@@ -100,7 +102,7 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+  </div>
       </section>
     </div>
   );

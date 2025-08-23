@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
@@ -38,12 +37,11 @@ const AccountData = () => {
   }, [tabParam]);
 
   const defaultValues = useMemo<ProfileForm>(() => {
-    const meta = (user?.user_metadata as Record<string, any>) || {};
     return {
-      fullName: meta.fullName || meta.name || "",
-      cpf: meta.cpf || "",
-      phone: meta.phone || "",
-      birthDate: meta.birthDate || "",
+      fullName: `${user?.first_name || ""} ${user?.last_name || ""}`.trim(),
+      cpf: "",
+      phone: "",
+      birthDate: "",
     };
   }, [user]);
 
@@ -57,19 +55,12 @@ const AccountData = () => {
   }, [defaultValues]);
 
   const onSubmitProfile = async (values: ProfileForm) => {
-    const { error } = await supabase.auth.updateUser({
-      data: {
-        fullName: values.fullName,
-        cpf: values.cpf,
-        phone: values.phone,
-        birthDate: values.birthDate,
-      },
-    });
-    if (error) {
-      toast({ title: "Erro ao salvar", description: error.message });
-      return;
+    try {
+      // TODO: Implementar chamada para API Django para atualizar perfil
+      toast({ title: "Funcionalidade em desenvolvimento", description: "A atualização de perfil será implementada em breve." });
+    } catch (error) {
+      toast({ title: "Erro ao salvar", description: "Não foi possível atualizar o perfil." });
     }
-    toast({ title: "Perfil atualizado", description: "Seus dados foram salvos com sucesso." });
   };
 
   const pwdForm = useForm<PasswordForm>({ defaultValues: { newPassword: "", confirmPassword: "" } });
@@ -95,13 +86,13 @@ const AccountData = () => {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password: values.newPassword });
-    if (error) {
-      toast({ title: "Erro ao alterar senha", description: error.message });
-      return;
+    try {
+      // TODO: Implementar chamada para API Django para alterar senha
+      toast({ title: "Funcionalidade em desenvolvimento", description: "A alteração de senha será implementada em breve." });
+      pwdForm.reset();
+    } catch (error) {
+      toast({ title: "Erro ao alterar senha", description: "Não foi possível alterar a senha." });
     }
-    toast({ title: "Senha alterada", description: "Sua senha foi atualizada." });
-    pwdForm.reset();
   };
 
   const handleTabChange = (value: string) => {
@@ -111,13 +102,9 @@ const AccountData = () => {
     setSearchParams(params, { replace: true });
   };
 
-  const displayName =
-    (user?.user_metadata?.fullName as string | undefined) ||
-    (user?.user_metadata?.name as string | undefined) ||
-    user?.email?.split("@")[0] ||
-    "Investidor";
+  const displayName = `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || user?.email?.split("@")[0] || "Investidor";
 
-  const since = user?.created_at ? new Date(user.created_at).toLocaleDateString("pt-BR") : "—";
+  const since = "—"; // TODO: Implementar data de criação da conta
 
   return (
     <div className="min-h-screen">

@@ -278,11 +278,11 @@ function finalizeCreation() {
 }
 
   return (
-    <div className="min-h-screen">
+  <div className="min-h-screen page-shell-gradient">
       <SEO title="Minha Carteira — investorion.com.br" description="Resumo da carteira, composição e histórico de aportes." canonical="/carteira" />
 
       <Sheet>
-        <section className="container py-10 md:py-14">
+  <section className="container py-10 md:py-14">
           <header className="flex items-center justify-between gap-4">
             <h1 className="text-2xl font-semibold">Minha Carteira</h1>
             <SheetTrigger asChild>

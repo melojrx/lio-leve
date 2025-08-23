@@ -1,41 +1,51 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCallback } from "react";
-import { LineChart } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-
 const Header = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({ title: "Erro ao sair", description: error.message });
-      return;
+    try {
+      await logout();
+      toast({ title: "Até mais!", description: "Sessão encerrada." });
+      navigate("/", { replace: true });
+    } catch (error) {
+      toast({ title: "Erro ao sair", description: "Não foi possível encerrar a sessão." });
     }
-    toast({ title: "Até mais!", description: "Sessão encerrada." });
-    navigate("/", { replace: true });
-  }, [navigate]);
+  }, [logout, navigate]);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2">
-            <div aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20"><LineChart className="h-4 w-4" /></div>
-            <span className="font-semibold tracking-tight">investorion.com.br</span>
-          </Link>
-        </div>
+        <Link to="/" className="group flex items-center gap-2">
+          <div aria-hidden className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/25 transition-colors group-hover:from-primary/25 group-hover:to-primary/10">
+            <BrandLogo size={20} className="text-primary" />
+          </div>
+          <span className="font-semibold tracking-tight text-sm sm:text-base">
+            investorion.com.br
+          </span>
+        </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm">
-          <Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
-          <Link to="/carteira" className="hover:text-primary transition-colors">Carteira</Link>
-          <Link to="/mercado" className="hover:text-primary transition-colors">Mercado</Link>
-          <Link to="/transacoes" className="hover:text-primary transition-colors">Transações</Link>
-          <Link to="/configuracoes" className="hover:text-primary transition-colors">Configurações</Link>
+          {[
+            ["/dashboard","Dashboard"],
+            ["/carteira","Carteira"],
+            ["/mercado","Mercado"],
+            ["/transacoes","Transações"],
+            ["/configuracoes","Configurações"],
+          ].map(([to,label]) => (
+            <Link
+              key={to}
+              to={to}
+              className="relative px-1 py-1 font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:bg-primary after:transition-all hover:after:w-full"
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
         <div className="flex items-center gap-2 max-sm:gap-1">
           {!user ? (
