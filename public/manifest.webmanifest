@@ -1,6 +1,6 @@
 {
   "name": "investorion.com.br",
-  "short_name": "investorion",
+  "short_name": "Investorion",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,15 +10,15 @@
   "icons": [
     {
       "src": "/icons/favicon.svg",
-      "sizes": "24x24",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
