@@ -2,6 +2,8 @@ import SEO from "@/components/SEO";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "next-themes";
+import { BackButton } from "@/components/BackButton";
+
 const Settings = () => {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const current = theme === "dark" || resolvedTheme === "dark" ? "dark" : "light";
@@ -9,6 +11,7 @@ const Settings = () => {
     <div className="min-h-screen">
       <SEO title="Configurações — investorion.com.br" description="Preferências da conta e suporte." />
       <section className="container py-10 md:py-14">
+        <BackButton />
         <h1 className="text-2xl font-semibold">Configurações</h1>
 
         <div className="mt-6 rounded-lg border p-6">

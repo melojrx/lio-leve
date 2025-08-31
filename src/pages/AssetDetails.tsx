@@ -16,11 +16,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, ArrowLeft, ArrowLeftRight, Trash2, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowLeftRight, Trash2, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { Asset, Movement, MovementKind } from "@/types/asset";
 import { deleteAsset as storageDeleteAsset, getAssets, getMovements, saveMovements } from "@/lib/storage";
+import { BackButton } from "@/components/BackButton";
 
 function formatCurrencyBRL(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -72,9 +73,7 @@ export default function AssetDetails() {
     return (
       <div className="container py-10">
         <SEO title="Ativo não encontrado" description="O ativo solicitado não foi localizado." />
-        <Button variant="outline" asChild>
-          <Link to="/carteira"><ArrowLeft className="mr-2 h-4 w-4" /> Voltar</Link>
-        </Button>
+        <BackButton />
         <p className="mt-4 text-sm text-muted-foreground">Ativo não encontrado.</p>
       </div>
     );
@@ -96,9 +95,7 @@ return (
             <p className="text-sm text-muted-foreground">{asset.institution}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" onClick={() => navigate(-1)}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-            </Button>
+            <BackButton className="!mb-0" />
             <Button variant="outline" onClick={() => addMovement("TRANSFERENCIA")}> 
               <ArrowLeftRight className="mr-2 h-4 w-4" /> Transferir
             </Button>

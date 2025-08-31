@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
 import { ShieldCheck, UserCog, KeyRound } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { BackButton } from "@/components/BackButton";
 
 // Tipos do formulário de Perfil
 type ProfileForm = {
@@ -122,6 +123,7 @@ const AccountData = () => {
       </header>
 
       <main className="container py-6 md:py-10">
+        <BackButton />
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="perfil" className="gap-2"><UserCog className="h-4 w-4" /> Perfil</TabsTrigger>

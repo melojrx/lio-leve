@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserCog, KeyRound, LifeBuoy, ShieldCheck, Info } from "lucide-react";
 import { Link } from "react-router-dom";
+import { BackButton } from "@/components/BackButton";
+
 const tiles = [
   { title: "Meu Perfil", icon: UserCog, to: "/conta/dados?tab=perfil" },
   { title: "Alterar Senha", icon: KeyRound, to: "/conta/dados?tab=senha" },
@@ -27,6 +29,7 @@ const Account = () => {
       />
 
       <section className="container py-8 md:py-10">
+        <BackButton />
         <h1 className="sr-only">Conta do usuário</h1>
 
         <div className="rounded-2xl overflow-hidden border bg-card">

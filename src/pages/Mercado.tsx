@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchFX, fetchStocks, fetchBCBSeries } from "@/lib/market";
 import { getSimplePricesBRL } from "@/lib/crypto";
 import { cn } from "@/lib/utils";
+import { BackButton } from "@/components/BackButton";
 
 // Favoritos em localStorage
 const FAV_KEY = "market_favorites";
@@ -136,6 +137,7 @@ export default function Mercado() {
     <>
       <SEO title="Mercado – Cotações em Tempo Real" description="Cotações em tempo real: câmbio, ações, índices, juros, inflação e cripto." canonical="/mercado" />
       <main className="container py-8">
+        <BackButton />
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Mercado – Cotações em Tempo Real</h1>
           <div className="flex gap-2">

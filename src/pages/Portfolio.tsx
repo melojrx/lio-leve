@@ -43,6 +43,7 @@ import type { Asset } from "@/types/asset";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
+import { BackButton } from "@/components/BackButton";
 
 // Categorias oferecidas no estado vazio
 const categories = [
@@ -283,6 +284,7 @@ function finalizeCreation() {
 
       <Sheet>
   <section className="container py-10 md:py-14">
+          <BackButton />
           <header className="flex items-center justify-between gap-4">
             <h1 className="text-2xl font-semibold">Minha Carteira</h1>
             <SheetTrigger asChild>
