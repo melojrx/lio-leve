@@ -275,7 +275,6 @@ const Portfolio = () => {
             </TabsList>
 
             <TabsContent value="resumo" className="space-y-6">
-              {/* ... (conteúdo da aba Resumo permanece o mesmo) ... */}
               <h2 className="text-xl font-semibold">Resumo da Carteira</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
@@ -355,7 +354,6 @@ const Portfolio = () => {
             </TabsContent>
           </Tabs>
 
-          {/* ... (Sheet para adicionar novo ativo permanece o mesmo) ... */}
           <SheetContent side="right" className="w-full sm:max-w-md">
             {selectedCategory == null ? (
               <>
@@ -366,7 +364,79 @@ const Portfolio = () => {
               <div className="flex h-full flex-col">
                 <SheetHeader><SheetTitle>Adicionar {selectedCategory}</SheetTitle><SheetDescription>{step === 1 && (selectedCategory === "Criptoativos" ? "Busque e selecione a criptomoeda" : "Busque e selecione a instituição")}{step === 2 && (selectedCategory === "Conta Corrente" ? "Informe a data, o valor aplicado e o % sobre o CDI (opcional)" : selectedCategory === "Criptoativos" ? "Informe a data, a quantidade e o preço unitário (BRL)" : "Informe a data e o valor aplicado")}{step === 3 && "Ativo adicionado com sucesso"}</SheetDescription></SheetHeader>
                 <div className="mt-4 flex gap-2">{[1, 2, 3].map((s) => (<div key={s} className={cn("h-1 flex-1 rounded-full bg-muted", step >= (s as 1 | 2 | 3) && "bg-primary")} />))}</div>
-                <div className="mt-6 flex-1 overflow-auto">{step === 1 && (<div className="space-y-4">{selectedCategory === "Criptoativos" ? (<>{/* ... Cripto step 1 ... */}</>) : (<>{/* ... Banco step 1 ... */}</>)}</div>)}{step === 2 && (<div className="space-y-6">{selectedCategory === "Criptoativos" ? (<>{/* ... Cripto step 2 ... */}</>) : (<>{/* ... Banco step 2 ... */}</>)}</div>)}{step === 3 && (<div className="flex h-full flex-col items-center justify-center"><CheckCircle2 className="h-12 w-12 text-primary" /><h3 className="mt-4 text-lg font-semibold">Adicionado com sucesso</h3><p className="text-sm text-muted-foreground">O ativo foi adicionado à sua carteira.</p><div className="mt-6 grid w-full gap-2"><Button variant="outline" onClick={() => { setSelectedCategory(null); }}>Adicionar um novo ativo</Button><Button onClick={() => { resetWizard(); setSelectedCategory(selectedCategory); setStep(1); }} variant="outline">Adicionar uma nova {selectedCategory}</Button></div></div>)}</div>
+                <div className="mt-6 flex-1 overflow-auto">
+                  {step === 1 && (
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder={selectedCategory === "Criptoativos" ? "Buscar por nome ou símbolo..." : "Buscar por nome do banco..."} className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} />
+                      </div>
+                      {selectedCategory === "Criptoativos" ? (
+                        <>
+                          {loadingCryptos && <div className="flex items-center justify-center p-4"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+                          <div className="space-y-2">
+                            {cryptoResults.map((c) => (
+                              <button key={c.id} type="button" onClick={() => setSelectedCoin(c)} className="w-full flex items-center justify-between rounded-lg border p-3 text-left hover:bg-muted transition-colors">
+                                <div className="flex items-center gap-3">
+                                  {c.thumb ? <img src={c.thumb} alt={c.name} className="h-6 w-6 rounded-full" /> : <div className="h-6 w-6 rounded-full bg-muted" />}
+                                  <div>
+                                    <div className="font-medium">{c.name}</div>
+                                    <div className="text-xs text-muted-foreground">{c.symbol}</div>
+                                  </div>
+                                </div>
+                                {loadingPrices ? <Skeleton className="h-4 w-16" /> : cryptoPrices[c.id] && <div className="text-sm">{formatCurrencyBRL(cryptoPrices[c.id])}</div>}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {loadingBanks && <div className="flex items-center justify-center p-4"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+                          <div className="space-y-2">
+                            {filteredBanks.map((b) => (
+                              <button key={b.ispb} type="button" onClick={() => setSelectedBank(b)} className="w-full flex items-center justify-between rounded-lg border p-3 text-left hover:bg-muted transition-colors">
+                                <div className="font-medium">{b.fullName}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {step === 2 && (
+                    <div className="space-y-6">
+                      {selectedCategory === "Criptoativos" ? (
+                        <>
+                          <div className="space-y-2">
+                            <label>Data da compra</label>
+                            <Popover>
+                              <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start text-left font-normal">{date ? format(date, "dd/MM/yyyy") : "Selecione"}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></PopoverTrigger>
+                              <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} /></PopoverContent>
+                            </Popover>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2"><label>Quantidade</label><Input placeholder="0,00" value={qtyStr} onChange={(e) => setQtyStr(e.target.value)} /></div>
+                            <div className="space-y-2"><label>Preço unitário (BRL)</label><Input placeholder="R$ 0,00" value={unitPriceMask} onChange={(e) => setUnitPriceMask(e.target.value.replace(/[^0-9]/g, '').replace(/(\d{2})$/, ',$1').replace(/\B(?=(\d{3})+(?!\d))/g, '.'))} /></div>
+                          </div>
+                          <div className="text-sm text-muted-foreground">Total: {formatCurrencyBRL(totalBRL)}</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="space-y-2">
+                            <label>Data da aplicação</label>
+                            <Popover>
+                              <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start text-left font-normal">{date ? format(date, "dd/MM/yyyy") : "Selecione"}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></PopoverTrigger>
+                              <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} /></PopoverContent>
+                            </Popover>
+                          </div>
+                          <div className="space-y-2"><label>Valor aplicado</label><Input placeholder="R$ 0,00" value={amountMask} onChange={(e) => setAmountMask(e.target.value.replace(/[^0-9]/g, '').replace(/(\d{2})$/, ',$1').replace(/\B(?=(\d{3})+(?!\d))/g, '.'))} /></div>
+                          {selectedCategory === "Conta Corrente" && (<div className="space-y-2"><label>Rentabilidade (% do CDI)</label><Input placeholder="100%" value={cdiMask} onChange={(e) => setCdiMask(e.target.value.replace(/[^0-9]/g, '') + '%')} /></div>)}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {step === 3 && (<div className="flex h-full flex-col items-center justify-center"><CheckCircle2 className="h-12 w-12 text-primary" /><h3 className="mt-4 text-lg font-semibold">Adicionado com sucesso</h3><p className="text-sm text-muted-foreground">O ativo foi adicionado à sua carteira.</p><div className="mt-6 grid w-full gap-2"><Button variant="outline" onClick={() => { setSelectedCategory(null); }}>Adicionar um novo ativo</Button><Button onClick={() => { resetWizard(); setSelectedCategory(selectedCategory); setStep(1); }} variant="outline">Adicionar uma nova {selectedCategory}</Button></div></div>)}
+                </div>
                 {step !== 3 && (<div className="mt-6 flex items-center justify-between border-t pt-4"><div className="flex gap-2">{step > 1 && (<Button variant="outline" onClick={() => setStep((s) => (s === 2 ? 1 : 2))}>Voltar</Button>)}<Button variant="ghost" onClick={() => setSelectedCategory(null)}>Cancelar</Button></div>{step === 1 ? (<Button disabled={selectedCategory === "Criptoativos" ? !selectedCoin : !selectedBank} onClick={() => setStep(2)}>Avançar</Button>) : (<Button disabled={selectedCategory === "Criptoativos" ? !date || quantity <= 0 || unitPrice <= 0 : !date || amount <= 0} onClick={handleNextFromStep2}>Avançar</Button>)}</div>)}
                 <Dialog open={showFutureConfirm} onOpenChange={setShowFutureConfirm}><DialogContent><DialogHeader><DialogTitle>Confirme o cadastro de aplicação em data futura!</DialogTitle><DialogDescription>Você está prestes a adicionar uma movimentação em uma data futura. Seu ativo ficará em "Aguardando Precificação" até que tenhamos os dados necessários. Deseja continuar assim mesmo?</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowFutureConfirm(false)}>Cancelar</Button><Button onClick={() => { setShowFutureConfirm(false); finalizeCreation(); }}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
               </div>
@@ -375,7 +445,6 @@ const Portfolio = () => {
         </section>
       </Sheet>
 
-      {/* Diálogo de Edição */}
       <Dialog open={!!assetToEdit} onOpenChange={(open) => !open && setAssetToEdit(null)}>
         <DialogContent>
           <DialogHeader>
@@ -403,7 +472,6 @@ const Portfolio = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Exclusão */}
       <AlertDialog open={!!assetToDelete} onOpenChange={(open) => !open && setAssetToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
