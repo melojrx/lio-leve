@@ -240,15 +240,18 @@ const Portfolio = () => {
     if (isFuture) { setShowFutureConfirm(true); } else { finalizeCreation(); }
   }
   function finalizeCreation() {
+    let newAsset: Asset | null = null;
     if (selectedCategory === "Criptoativos" && selectedCoin) {
-      const newAsset: Asset = { id: crypto.randomUUID(), type: "CRIPTO", institution: selectedCoin.name, date: (date || new Date()).toISOString(), amount: totalBRL, coinId: selectedCoin.id, coinSymbol: selectedCoin.symbol, coinName: selectedCoin.name, coinThumb: selectedCoin.thumb, quantity, unitPriceBRL: unitPrice } as Asset;
-      setAssets((prev) => [newAsset, ...prev]);
-      setStep(3);
-      return;
+      newAsset = { id: crypto.randomUUID(), type: "CRIPTO", institution: selectedCoin.name, date: (date || new Date()).toISOString(), amount: totalBRL, coinId: selectedCoin.id, coinSymbol: selectedCoin.symbol, coinName: selectedCoin.name, coinThumb: selectedCoin.thumb, quantity, unitPriceBRL: unitPrice };
+    } else if (selectedBank) {
+      newAsset = { id: crypto.randomUUID(), type: selectedCategory === "Conta Corrente" ? "CONTA_CORRENTE" : "POUPANÇA", institution: selectedBank?.fullName || selectedBank?.name || "", date: (date || new Date()).toISOString(), amount, ...(selectedCategory === "Conta Corrente" && cdiPercent > 0 ? { cdiPercent } : {}) };
     }
-    const newAsset: Asset = { id: crypto.randomUUID(), type: selectedCategory === "Conta Corrente" ? "CONTA_CORRENTE" : "POUPANÇA", institution: selectedBank?.fullName || selectedBank?.name || "", date: (date || new Date()).toISOString(), amount, ...(selectedCategory === "Conta Corrente" && cdiPercent > 0 ? { cdiPercent } : {}) } as Asset;
-    setAssets((prev) => [newAsset, ...prev]);
-    setStep(3);
+
+    if (newAsset) {
+      setAssets((prev) => [newAsset!, ...prev]);
+      setStep(3);
+      toast({ title: "Ativo adicionado!", description: `${newAsset.institution} foi adicionado à sua carteira.` });
+    }
   }
 
   return (

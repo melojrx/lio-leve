@@ -18,10 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, ArrowLeftRight, Trash2, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import type { Asset, Movement, MovementKind } from "@/types/asset";
 import { deleteAsset as storageDeleteAsset, getAssets, getMovements, saveMovements } from "@/lib/storage";
 import { BackButton } from "@/components/BackButton";
+import { toast } from "@/hooks/use-toast";
 
 function formatCurrencyBRL(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -53,7 +54,14 @@ export default function AssetDetails() {
   }, [id]);
 
   function addMovement(k: MovementKind) {
-    if (!id || !date || amount <= 0) return;
+    if (!id || !date || amount <= 0) {
+      toast({
+        title: "Campos incompletos",
+        description: "Por favor, preencha a data e o valor da movimentação.",
+        variant: "destructive",
+      });
+      return;
+    }
     const newMove: Movement = {
       id: crypto.randomUUID(),
       assetId: id,
@@ -64,6 +72,10 @@ export default function AssetDetails() {
     const next = [newMove, ...movements];
     setMovements(next);
     saveMovements(id, next);
+    toast({
+      title: "Movimentação adicionada!",
+      description: "Sua movimentação foi registrada com sucesso.",
+    });
     // reset
     setAmountMask("");
     setDate(undefined);
@@ -113,6 +125,7 @@ return (
                   <AlertDialogAction
                     onClick={() => {
                       storageDeleteAsset(asset.id);
+                      toast({ title: "Ativo removido", description: "O ativo e seu histórico foram removidos." });
                       navigate("/carteira");
                     }}
                   >
