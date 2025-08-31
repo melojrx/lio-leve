@@ -67,22 +67,24 @@ const Index = () => {
   <section className="container grid gap-6 md:grid-cols-3 md:gap-8">
         {[
           {
-            icon: <LineChart />, title: "Dashboard consolidado", desc: "Patrimônio, rentabilidade e variação diária com filtros 1D, 1M, 1A."
+            icon: <LineChart />, title: "Dashboard consolidado", desc: "Patrimônio, rentabilidade e variação diária com filtros 1D, 1M, 1A.", to: "/dashboard"
           },
           {
-            icon: <Layers />, title: "Cadastro de ativos", desc: "Adicione transações com validação de ticker e preço médio automático."
+            icon: <Layers />, title: "Cadastro de ativos", desc: "Adicione transações com validação de ticker e preço médio automático.", to: "/transacoes"
           },
           {
-            icon: <Wallet />, title: "Carteira detalhada", desc: "Veja posição por ativo, tipo e setor com gráficos de composição."
+            icon: <Wallet />, title: "Carteira detalhada", desc: "Veja posição por ativo, tipo e setor com gráficos de composição.", to: "/carteira"
           },
         ].map((f, i) => (
-          <article key={i} className="group rounded-xl border bg-card/80 backdrop-blur-sm p-6 shadow-sm ring-1 ring-transparent transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/20">
-            <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
-              {f.icon}
-            </div>
-            <h3 className="text-lg font-semibold tracking-tight">{f.title}</h3>
-            <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-          </article>
+          <Link to={f.to} key={i} className="block">
+            <article className="group rounded-xl border bg-card/80 backdrop-blur-sm p-6 shadow-sm ring-1 ring-transparent transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/20 h-full">
+              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+                {f.icon}
+              </div>
+              <h3 className="text-lg font-semibold tracking-tight">{f.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+            </article>
+          </Link>
         ))}
       </section>
 
