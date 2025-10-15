@@ -9,6 +9,7 @@ import { useMemo } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { TopAssetsCard } from "@/components/dashboard/TopAssetsCard";
 
 const COLORS = [
   "hsl(var(--primary))",
@@ -30,85 +31,62 @@ function formatPercent(value: number | string) {
 }
 
 const Dashboard = () => {
-  // Fetch portfolio summary from API
   const {
     data: summary,
     isLoading: isLoadingSummary,
     error: summaryError
   } = usePortfolioSummary();
 
-  // Fetch assets for history chart
   const {
     data: assets = [],
     isLoading: isLoadingAssets,
     error: assetsError
   } = useAssets();
 
-  // Prepare composition data for pie chart from API data
   const compositionData = useMemo(() => {
     if (!summary?.allocation_by_type) return [];
-
-    return Object.entries(summary.allocation_by_type).map(([name, percentage], index) => ({
+    return Object.entries(summary.allocation_by_type).map(([name, percentage]) => ({
       name,
-      value: percentage,
-      fill: COLORS[index % COLORS.length],
+      value: percentage || 0,
     }));
   }, [summary]);
 
-  // Prepare historical data for area chart
   const historyData = useMemo(() => {
-    if (!assets.length) return [{ t: "Início", v: 0 }];
+    // Placeholder data, can be replaced with real historical data later
+    return [
+      { name: 'Jan', value: 1000 },
+      { name: 'Fev', value: 1200 },
+      { name: 'Mar', value: 1100 },
+      { name: 'Abr', value: 1500 },
+      { name: 'Mai', value: 1800 },
+    ];
+  }, []);
 
-    const sortedAssets = [...assets].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
-
-    // For now, use a simple cumulative approach
-    // TODO: This should be improved to show actual portfolio value over time
-    const series = sortedAssets.map((asset, index) => ({
-      t: new Date(asset.created_at).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-      v: index + 1, // Placeholder - should calculate actual value
-    }));
-
-    if (series.length === 1) {
-      return [{ t: "Início", v: 0 }, ...series];
-    }
-
-    return series;
+  const topAssets = useMemo(() => {
+    if (!assets || assets.length === 0) return [];
+    return [...assets]
+      .sort((a, b) => (b.quantity * b.average_price) - (a.quantity * a.average_price))
+      .slice(0, 5);
   }, [assets]);
 
-  // Show loading skeleton
   if (isLoadingSummary || isLoadingAssets) {
     return (
       <div className="min-h-screen page-shell-gradient">
         <SEO title="Dashboard — investorion.com.br" />
-        <section className="container py-10 md:py-14">
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-64 mt-2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-64 w-full" />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-40" />
-                <Skeleton className="h-4 w-48 mt-2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-80 w-full" />
-              </CardContent>
-            </Card>
+        <section className="container py-10 md:py-14 space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
           </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            <Skeleton className="md:col-span-2 h-96" />
+            <Skeleton className="h-96" />
+          </div>
+          <Skeleton className="h-72" />
         </section>
       </div>
     );
   }
 
-  // Show error state
   if (summaryError || assetsError) {
     return (
       <div className="container py-10">
@@ -124,7 +102,6 @@ const Dashboard = () => {
     );
   }
 
-  // Show empty state
   if (!summary || summary.assets_count === 0) {
     return (
       <div className="container py-10 text-center">
@@ -143,9 +120,9 @@ const Dashboard = () => {
     );
   }
 
-  const totalValue = parseFloat(summary.current_value);
-  const profitLoss = parseFloat(summary.profit_loss);
-  const profitLossPercent = parseFloat(summary.profit_loss_percent);
+  const totalValue = summary.current_value || 0;
+  const profitLoss = parseFloat(summary.profit_loss || '0');
+  const profitLossPercent = parseFloat(summary.profit_loss_percent || '0');
   const isProfitable = profitLoss >= 0;
 
   return (
@@ -155,7 +132,6 @@ const Dashboard = () => {
         description="Resumo do seu patrimônio e desempenho."
       />
       <section className="container py-10 md:py-14">
-        {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           <Card>
             <CardHeader className="pb-2">
@@ -177,7 +153,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatCurrencyBRL(summary.total_invested)}
+                {formatCurrencyBRL(summary.total_invested || 0)}
               </div>
             </CardContent>
           </Card>
@@ -218,8 +194,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Charts */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-3 mb-6">
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>Patrimônio</CardTitle>
@@ -242,7 +217,7 @@ const Dashboard = () => {
                           <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-                      <XAxis dataKey="t" tickLine={false} axisLine={false} fontSize={12} />
+                      <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
                       <YAxis hide />
                       <Tooltip
                         contentStyle={{
@@ -254,7 +229,7 @@ const Dashboard = () => {
                       />
                       <Area
                         type="monotone"
-                        dataKey="v"
+                        dataKey="value"
                         stroke="hsl(var(--primary))"
                         fill="url(#pv)"
                         strokeWidth={2}
@@ -286,7 +261,7 @@ const Dashboard = () => {
                       paddingAngle={5}
                     >
                       {compositionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, "Alocação"]} />
@@ -301,6 +276,8 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        <TopAssetsCard assets={topAssets} totalInvested={summary.total_invested || 0} />
       </section>
     </div>
   );
