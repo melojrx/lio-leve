@@ -45,6 +45,10 @@ export type AssetSummary = {
   // Define if needed later
 };
 
+export type Profile = Database['public']['Tables']['profiles']['Row'];
+export type ProfileUpdateData = Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'email'>;
+
+
 const getUserId = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("User not authenticated.");
@@ -70,6 +74,7 @@ const TRANSACTION_TYPE_MAP: Record<TransactionType, string> = {
 };
 
 const apiClient = {
+  // ... (asset and transaction methods remain the same)
   async getAssets(): Promise<Asset[]> {
     const { data, error } = await supabase.from('assets').select('*').eq('is_active', true);
     if (error) throw error;
@@ -243,6 +248,36 @@ const apiClient = {
   },
   
   async getAssetSummary(id: string): Promise<AssetSummary> { return {}; },
+
+  // Profile Methods
+  async getProfile(): Promise<Profile | null> {
+    const userId = await getUserId();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateProfile(profileData: ProfileUpdateData): Promise<Profile> {
+    const userId = await getUserId();
+    const { data, error } = await supabase.from('profiles').update(profileData).eq('id', userId).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async uploadAvatar(file: File): Promise<string> {
+    const userId = await getUserId();
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${userId}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    return data.publicUrl;
+  },
 };
 
 export { apiClient };
