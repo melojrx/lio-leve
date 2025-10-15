@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type AssetType = "STOCK" | "FII" | "CRYPTO" | "FIXED_INCOME" | "ETF" | "RENDA_FIXA" | "FUND" | "BDR" | "OTHER";
+export type AssetType = "STOCK" | "FII" | "CRYPTO" | "ETF" | "RENDA_FIXA" | "FUND" | "BDR" | "OTHER";
 export type TransactionType = "BUY" | "SELL" | "TRANSFER";
 
 export interface Database {
