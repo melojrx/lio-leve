@@ -6,6 +6,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import UpdatePassword from "./pages/auth/UpdatePassword";
 import Dashboard from "./pages/Dashboard";
 import Portfolio from "./pages/Portfolio";
 import Transactions from "./pages/Transactions";
@@ -34,6 +36,8 @@ const App = () => (
               <Route path="/" element={<AppShell><Index /></AppShell>} />
               <Route path="/login" element={<AppShell><Login /></AppShell>} />
               <Route path="/cadastro" element={<AppShell><Register /></AppShell>} />
+              <Route path="/esqueci-senha" element={<AppShell><ForgotPassword /></AppShell>} />
+              <Route path="/update-password" element={<AppShell><UpdatePassword /></AppShell>} />
               <Route path="/ajuda" element={<AppShell><Help /></AppShell>} />
 
               {/* Protected routes */}
