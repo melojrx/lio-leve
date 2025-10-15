@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
 import { ShieldCheck, UserCog, KeyRound } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { BackButton } from "@/components/BackButton";
 
 // Tipos do formulário de Perfil
@@ -39,7 +39,7 @@ const AccountData = () => {
 
   const defaultValues = useMemo<ProfileForm>(() => {
     return {
-      fullName: `${user?.first_name || ""} ${user?.last_name || ""}`.trim(),
+      fullName: `${user?.user_metadata?.first_name || ""} ${user?.user_metadata?.last_name || ""}`.trim(),
       cpf: "",
       phone: "",
       birthDate: "",
@@ -53,14 +53,14 @@ const AccountData = () => {
 
   useEffect(() => {
     form.reset(defaultValues);
-  }, [defaultValues]);
+  }, [defaultValues, form]);
 
   const onSubmitProfile = async (values: ProfileForm) => {
     try {
       // TODO: Implementar chamada para API Django para atualizar perfil
-      toast({ title: "Funcionalidade em desenvolvimento", description: "A atualização de perfil será implementada em breve." });
+      toast.info("Funcionalidade em desenvolvimento", { description: "A atualização de perfil será implementada em breve." });
     } catch (error) {
-      toast({ title: "Erro ao salvar", description: "Não foi possível atualizar o perfil." });
+      toast.error("Erro ao salvar", { description: "Não foi possível atualizar o perfil." });
     }
   };
 
@@ -79,20 +79,20 @@ const AccountData = () => {
 
   const onSubmitPassword = async (values: PasswordForm) => {
     if (values.newPassword !== values.confirmPassword) {
-      toast({ title: "As senhas não coincidem", description: "Verifique e tente novamente." });
+      toast.warning("As senhas não coincidem", { description: "Verifique e tente novamente." });
       return;
     }
     if (!validatePassword(values.newPassword)) {
-      toast({ title: "Senha fraca", description: "Siga os requisitos mínimos de segurança." });
+      toast.warning("Senha fraca", { description: "Siga os requisitos mínimos de segurança." });
       return;
     }
 
     try {
       // TODO: Implementar chamada para API Django para alterar senha
-      toast({ title: "Funcionalidade em desenvolvimento", description: "A alteração de senha será implementada em breve." });
+      toast.info("Funcionalidade em desenvolvimento", { description: "A alteração de senha será implementada em breve." });
       pwdForm.reset();
     } catch (error) {
-      toast({ title: "Erro ao alterar senha", description: "Não foi possível alterar a senha." });
+      toast.error("Erro ao alterar senha", { description: "Não foi possível alterar a senha." });
     }
   };
 
@@ -103,7 +103,7 @@ const AccountData = () => {
     setSearchParams(params, { replace: true });
   };
 
-  const displayName = `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || user?.email?.split("@")[0] || "Investidor";
+  const displayName = `${user?.user_metadata?.first_name || ""} ${user?.user_metadata?.last_name || ""}`.trim() || user?.email?.split("@")[0] || "Investidor";
 
   const since = "—"; // TODO: Implementar data de criação da conta
 

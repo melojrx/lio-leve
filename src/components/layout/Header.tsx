@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useCallback } from "react";
 import BrandLogo from "@/components/BrandLogo";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -12,10 +12,10 @@ const Header = () => {
   const handleSignOut = useCallback(async () => {
     try {
       await logout();
-      toast({ title: "Até mais!", description: "Sessão encerrada." });
+      toast.info("Até mais!", { description: "Sessão encerrada." });
       navigate("/", { replace: true });
     } catch (error) {
-      toast({ title: "Erro ao sair", description: "Não foi possível encerrar a sessão." });
+      toast.error("Erro ao sair", { description: "Não foi possível encerrar a sessão." });
     }
   }, [logout, navigate]);
 

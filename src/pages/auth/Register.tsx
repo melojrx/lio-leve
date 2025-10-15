@@ -2,7 +2,7 @@ import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,11 +29,11 @@ const Register = () => {
     const confirm = String(formData.get("confirm") || "");
 
     if (!email || !password || !firstName || !lastName) {
-      toast({ title: "Campos obrigatórios", description: "Preencha todos os campos." });
+      toast.warning("Campos obrigatórios", { description: "Preencha todos os campos." });
       return;
     }
     if (password !== confirm) {
-      toast({ title: "Senhas diferentes", description: "Confirme a mesma senha." });
+      toast.warning("Senhas diferentes", { description: "Confirme a mesma senha." });
       return;
     }
 
@@ -41,13 +41,11 @@ const Register = () => {
 
     try {
       await register(email, password, firstName, lastName);
-      toast({ title: "Conta criada!", description: "Bem-vindo ao Investorion!" });
+      toast.success("Conta criada!", { description: "Bem-vindo ao Investorion!" });
       navigate("/dashboard", { replace: true });
     } catch (error) {
-      toast({ 
-        title: "Falha no cadastro", 
+      toast.error("Falha no cadastro", { 
         description: "Erro ao criar conta. Tente novamente.",
-        variant: "destructive"
       });
     } finally {
       setLoading(false);

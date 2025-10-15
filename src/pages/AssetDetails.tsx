@@ -14,13 +14,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Trash2, Plus, Loader2, AlertCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { BackButton } from "@/components/BackButton";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAsset, useTransactions, useCreateTransaction, useDeleteAsset } from "@/hooks/usePortfolio";
 import { TransactionType } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +77,7 @@ export default function AssetDetails() {
 
   const handleAddTransaction = () => {
     if (!id || !newDate || quantity <= 0 || unitPrice <= 0) {
-      toast({ title: "Campos inválidos", description: "Preencha todos os campos obrigatórios." });
+      toast.warning("Campos inválidos", { description: "Preencha todos os campos obrigatórios." });
       return;
     }
 
@@ -101,7 +108,7 @@ export default function AssetDetails() {
     if (!id) return;
     deleteAsset.mutate(id, {
       onSuccess: () => {
-        toast({ title: "Ativo removido", description: "O ativo e seu histórico foram removidos." });
+        toast.success("Ativo removido", { description: "O ativo e seu histórico foram removidos." });
         navigate("/carteira");
       },
     });

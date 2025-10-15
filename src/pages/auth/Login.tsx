@@ -2,7 +2,7 @@ import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,13 +29,11 @@ const Login = () => {
 
     try {
       await login(email, password);
-      toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
+      toast.success("Bem-vindo!", { description: "Login realizado com sucesso." });
       navigate("/dashboard", { replace: true });
     } catch (error) {
-      toast({ 
-        title: "Falha ao entrar", 
+      toast.error("Falha ao entrar", { 
         description: "Credenciais inválidas. Verifique seu email e senha.",
-        variant: "destructive"
       });
     } finally {
       setLoading(false);

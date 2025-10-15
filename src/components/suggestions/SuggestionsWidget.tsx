@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // Types
 interface SuggestionItem {
@@ -83,7 +83,7 @@ export default function SuggestionsWidget() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
-      toast({ title: "Preencha todos os campos", description: "Título e descrição são obrigatórios." });
+      toast.warning("Preencha todos os campos", { description: "Título e descrição são obrigatórios." });
       return;
     }
     const newItem: SuggestionItem = {
@@ -99,7 +99,7 @@ export default function SuggestionsWidget() {
     setTitle("");
     setDescription("");
     setKind("ideia");
-    toast({ title: "Sugestão enviada!", description: "Obrigado por contribuir com melhorias." });
+    toast.success("Sugestão enviada!", { description: "Obrigado por contribuir com melhorias." });
   }
 
   function vote(id: string) {
