@@ -45,10 +45,10 @@ export type AssetSummary = {
   // Define if needed later
 };
 
-const getUserId = async () => {
+const getUser = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("User not authenticated.");
-  return user.id;
+  return user;
 };
 
 const ASSET_TYPE_MAP: Record<AssetType, string> = {
@@ -94,10 +94,10 @@ const apiClient = {
   },
 
   async createAsset(assetData: Omit<AssetCreateData, 'name'>): Promise<Asset> {
-    const userId = await getUserId();
+    const user = await getUser();
 
     const insertPayload: Database['public']['Tables']['assets']['Insert'] = {
-      user_id: userId,
+      user_id: user.id,
       ticker: assetData.ticker,
       name: assetData.ticker,
       asset_type: assetData.type,
@@ -154,7 +154,7 @@ const apiClient = {
   },
 
   async createTransaction(txData: TransactionCreateData): Promise<Transaction> {
-    const userId = await getUserId();
+    const user = await getUser();
     const { data, error } = await supabase.from('transactions').insert({
       asset_id: txData.asset,
       transaction_type: txData.type,
@@ -162,7 +162,7 @@ const apiClient = {
       unit_price: parseFloat(txData.unit_price),
       fees: parseFloat(txData.fees) || 0,
       date: txData.date,
-      user_id: userId,
+      user_id: user.id,
     }).select('*, asset:assets(ticker)').single();
 
     if (error) throw error;
@@ -247,8 +247,7 @@ const apiClient = {
 
   // Profile Methods
   async getProfile(): Promise<Profile> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated.");
+    const user = await getUser();
 
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -282,10 +281,14 @@ const apiClient = {
   },
 
   async updateProfile(profileData: ProfileUpdateData): Promise<Profile> {
-    const userId = await getUserId();
+    const user = await getUser();
     const { data, error } = await supabase
       .from('profiles')
-      .upsert({ id: userId, ...profileData })
+      .upsert({ 
+        id: user.id, 
+        email: user.email!, // Always include email for inserts
+        ...profileData 
+      })
       .select()
       .single();
       
@@ -294,9 +297,9 @@ const apiClient = {
   },
 
   async uploadAvatar(file: File): Promise<string> {
-    const userId = await getUserId();
+    const user = await getUser();
     const fileExt = file.name.split('.').pop();
-    const filePath = `${userId}-${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}-${Date.now()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
