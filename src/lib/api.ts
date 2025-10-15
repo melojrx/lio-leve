@@ -94,8 +94,10 @@ const apiClient = {
 
   async createAsset(assetData: Omit<AssetCreateData, 'name'>): Promise<Asset> {
     const userId = await getUserId();
+    const { type, ...restOfAssetData } = assetData;
     const { data, error } = await supabase.from('assets').insert({
-      ...assetData,
+      ...restOfAssetData,
+      asset_type: type,
       name: assetData.ticker, // Using ticker as name for now
       user_id: userId,
     }).select().single();

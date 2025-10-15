@@ -70,7 +70,7 @@ export function useCreateAsset() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: AssetCreateData) => apiClient.createAsset(data),
+    mutationFn: (data: Omit<AssetCreateData, 'name'>) => apiClient.createAsset(data),
     onSuccess: (newAsset) => {
       // Invalidate and refetch assets list
       queryClient.invalidateQueries({ queryKey: portfolioKeys.assets() });
