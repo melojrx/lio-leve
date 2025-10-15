@@ -20,7 +20,7 @@ export const TopAssetsCard = ({ assets, totalInvested }: TopAssetsCardProps) => 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top 5 Ativos</CardTitle>
+        <CardTitle>Top 5 Ativos (em sua carteira)</CardTitle>
         <CardDescription>Seus maiores investimentos por valor aplicado.</CardDescription>
       </CardHeader>
       <CardContent>
