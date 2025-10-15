@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Database, AssetType, TransactionType } from '@/types/database.types';
+import { Database, AssetType, TransactionType, Profile, ProfileUpdateData } from '@/types/database.types';
 
 // Application-specific types
 export type Asset = Database['public']['Tables']['assets']['Row'] & {
@@ -44,10 +44,6 @@ export type PortfolioSummary = {
 export type AssetSummary = {
   // Define if needed later
 };
-
-export type Profile = Database['public']['Tables']['profiles']['Row'];
-export type ProfileUpdateData = Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'email'>;
-
 
 const getUserId = async () => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -251,10 +247,38 @@ const apiClient = {
 
   // Profile Methods
   async getProfile(): Promise<Profile | null> {
-    const userId = await getUserId();
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (error) throw error;
-    return data;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated.");
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+      throw error;
+    }
+
+    if (profile) {
+      return profile;
+    }
+
+    // Profile not found, create it (lazy creation)
+    const { data: newProfile, error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: user.email!,
+        full_name: user.user_metadata?.full_name || '',
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+    return newProfile;
   },
 
   async updateProfile(profileData: ProfileUpdateData): Promise<Profile> {
