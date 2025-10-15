@@ -71,7 +71,7 @@ const TRANSACTION_TYPE_MAP: Record<TransactionType, string> = {
 
 const apiClient = {
   async getAssets(): Promise<Asset[]> {
-    const { data, error } = await supabase.from('assets').select('*');
+    const { data, error } = await supabase.from('assets').select('*').eq('is_active', true);
     if (error) throw error;
     return data.map(asset => ({
       ...asset,
@@ -120,7 +120,7 @@ const apiClient = {
   },
 
   async deleteAsset(id: string): Promise<void> {
-    const { error } = await supabase.from('assets').delete().eq('id', id);
+    const { error } = await supabase.from('assets').update({ is_active: false }).eq('id', id);
     if (error) throw error;
   },
 
