@@ -99,7 +99,7 @@ const Transactions = () => {
 
     createTransaction.mutate(
       {
-        asset: parseInt(selectedAssetId),
+        asset: selectedAssetId,
         type: newType,
         quantity: quantity.toString(),
         unit_price: unitPrice.toString(),
@@ -149,7 +149,7 @@ const Transactions = () => {
           <AlertDescription>
             Erro ao carregar transações. Por favor, tente novamente.
             {(transactionsError as Error)?.message && `: ${(transactionsError as Error).message}`}
-          </AlertDescription>
+          </Aler tDescription>
         </Alert>
       </div>
     );
@@ -372,8 +372,8 @@ const Transactions = () => {
                       </span>
                     </TableCell>
                     <TableCell>{format(new Date(tx.date), "dd/MM/yyyy")}</TableCell>
-                    <TableCell className="text-right">{parseFloat(tx.quantity).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{formatCurrencyBRL(parseFloat(tx.unit_price))}</TableCell>
+                    <TableCell className="text-right">{parseFloat(tx.quantity.toString()).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{formatCurrencyBRL(parseFloat(tx.unit_price.toString()))}</TableCell>
                     <TableCell className="text-right font-semibold">
                       {formatCurrencyBRL(parseFloat(tx.total_amount))}
                     </TableCell>

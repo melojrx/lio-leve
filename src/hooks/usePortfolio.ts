@@ -9,7 +9,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, Asset, AssetCreateData, Transaction, TransactionCreateData, PortfolioSummary, AssetSummary } from '@/lib/api';
+import { apiClient, AssetCreateData, TransactionCreateData } from '@/lib/api';
 import { toast } from 'sonner';
 
 // ============================================
@@ -18,11 +18,11 @@ import { toast } from 'sonner';
 export const portfolioKeys = {
   all: ['portfolio'] as const,
   assets: () => [...portfolioKeys.all, 'assets'] as const,
-  asset: (id: number) => [...portfolioKeys.assets(), id] as const,
-  assetSummary: (id: number) => [...portfolioKeys.asset(id), 'summary'] as const,
+  asset: (id: string) => [...portfolioKeys.assets(), id] as const,
+  assetSummary: (id: string) => [...portfolioKeys.asset(id), 'summary'] as const,
   transactions: () => [...portfolioKeys.all, 'transactions'] as const,
-  transaction: (id: number) => [...portfolioKeys.transactions(), id] as const,
-  transactionsByAsset: (assetId: number) => [...portfolioKeys.transactions(), 'asset', assetId] as const,
+  transaction: (id: string) => [...portfolioKeys.transactions(), id] as const,
+  transactionsByAsset: (assetId: string) => [...portfolioKeys.transactions(), 'asset', assetId] as const,
   summary: () => [...portfolioKeys.all, 'summary'] as const,
 };
 
@@ -44,7 +44,7 @@ export function useAssets() {
 /**
  * Fetch a single asset by ID
  */
-export function useAsset(id: number) {
+export function useAsset(id: string) {
   return useQuery({
     queryKey: portfolioKeys.asset(id),
     queryFn: () => apiClient.getAsset(id),
@@ -55,7 +55,7 @@ export function useAsset(id: number) {
 /**
  * Fetch asset summary (calculations)
  */
-export function useAssetSummary(id: number) {
+export function useAssetSummary(id: string) {
   return useQuery({
     queryKey: portfolioKeys.assetSummary(id),
     queryFn: () => apiClient.getAssetSummary(id),
@@ -92,7 +92,7 @@ export function useUpdateAsset() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<AssetCreateData> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<AssetCreateData> }) =>
       apiClient.updateAsset(id, data),
     onSuccess: (updatedAsset) => {
       // Invalidate specific asset and list
@@ -114,7 +114,7 @@ export function useDeleteAsset() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => apiClient.deleteAsset(id),
+    mutationFn: (id: string) => apiClient.deleteAsset(id),
     onSuccess: (_, deletedId) => {
       // Remove from cache and invalidate list
       queryClient.removeQueries({ queryKey: portfolioKeys.asset(deletedId) });
@@ -136,7 +136,7 @@ export function useDeleteAsset() {
 /**
  * Fetch all transactions (optionally filtered by asset)
  */
-export function useTransactions(assetId?: number) {
+export function useTransactions(assetId?: string) {
   return useQuery({
     queryKey: assetId
       ? portfolioKeys.transactionsByAsset(assetId)
@@ -149,7 +149,7 @@ export function useTransactions(assetId?: number) {
 /**
  * Fetch a single transaction by ID
  */
-export function useTransaction(id: number) {
+export function useTransaction(id: string) {
   return useQuery({
     queryKey: portfolioKeys.transaction(id),
     queryFn: () => apiClient.getTransaction(id),
@@ -168,8 +168,8 @@ export function useCreateTransaction() {
     onSuccess: (newTransaction) => {
       // Invalidate transactions and related asset data
       queryClient.invalidateQueries({ queryKey: portfolioKeys.transactions() });
-      queryClient.invalidateQueries({ queryKey: portfolioKeys.asset(newTransaction.asset) });
-      queryClient.invalidateQueries({ queryKey: portfolioKeys.assetSummary(newTransaction.asset) });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.asset(newTransaction.asset_id) });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.assetSummary(newTransaction.asset_id) });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.summary() });
 
       toast.success('Transação registrada com sucesso!');
@@ -187,13 +187,13 @@ export function useUpdateTransaction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<TransactionCreateData> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<TransactionCreateData> }) =>
       apiClient.updateTransaction(id, data),
     onSuccess: (updatedTransaction) => {
       queryClient.invalidateQueries({ queryKey: portfolioKeys.transaction(updatedTransaction.id) });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.transactions() });
-      queryClient.invalidateQueries({ queryKey: portfolioKeys.asset(updatedTransaction.asset) });
-      queryClient.invalidateQueries({ queryKey: portfolioKeys.assetSummary(updatedTransaction.asset) });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.asset(updatedTransaction.asset_id) });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.assetSummary(updatedTransaction.asset_id) });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.summary() });
 
       toast.success('Transação atualizada com sucesso!');
@@ -211,7 +211,7 @@ export function useDeleteTransaction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => apiClient.deleteTransaction(id),
+    mutationFn: (id: string) => apiClient.deleteTransaction(id),
     onSuccess: (_, deletedId) => {
       queryClient.removeQueries({ queryKey: portfolioKeys.transaction(deletedId) });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.transactions() });
