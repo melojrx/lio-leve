@@ -9,6 +9,9 @@ export type Json =
 export type AssetType = "STOCK" | "FII" | "CRYPTO" | "ETF" | "RENDA_FIXA" | "FUND" | "BDR" | "OTHER";
 export type TransactionType = "BUY" | "SELL" | "TRANSFER";
 
+export type Profile = Database['public']['Tables']['profiles']['Row'];
+export type ProfileUpdateData = Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'email'>>;
+
 export interface Database {
   public: {
     Tables: {

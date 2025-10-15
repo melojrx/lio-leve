@@ -246,7 +246,7 @@ const apiClient = {
   async getAssetSummary(id: string): Promise<AssetSummary> { return {}; },
 
   // Profile Methods
-  async getProfile(): Promise<Profile | null> {
+  async getProfile(): Promise<Profile> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated.");
 
@@ -278,12 +278,17 @@ const apiClient = {
     if (insertError) {
       throw insertError;
     }
-    return newProfile;
+    return newProfile!;
   },
 
   async updateProfile(profileData: ProfileUpdateData): Promise<Profile> {
     const userId = await getUserId();
-    const { data, error } = await supabase.from('profiles').update(profileData).eq('id', userId).select().single();
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert({ id: userId, ...profileData })
+      .select()
+      .single();
+      
     if (error) throw error;
     return data;
   },
