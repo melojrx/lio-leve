@@ -77,6 +77,9 @@ export interface Database {
           avatar_url: string | null
           created_at: string
           updated_at: string
+          cpf: string | null
+          phone: string | null
+          birth_date: string | null
         }
         Insert: {
           id: string
@@ -86,6 +89,9 @@ export interface Database {
         Update: {
           full_name?: string | null
           avatar_url?: string | null
+          cpf?: string | null
+          phone?: string | null
+          birth_date?: string | null
         }
       }
     }
