@@ -431,8 +431,8 @@ const Portfolio = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Link to={`/transacoes`}>
-                          <Button size="sm" variant="outline">Ver Transações</Button>
+                        <Link to={`/carteira/ativo/${asset.id}`}>
+                          <Button size="sm" variant="outline">Detalhes</Button>
                         </Link>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
