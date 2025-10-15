@@ -94,14 +94,25 @@ const apiClient = {
 
   async createAsset(assetData: Omit<AssetCreateData, 'name'>): Promise<Asset> {
     const userId = await getUserId();
-    const { type, ...restOfAssetData } = assetData;
-    const { data, error } = await supabase.from('assets').insert({
-      ...restOfAssetData,
-      asset_type: type,
-      name: assetData.ticker, // Using ticker as name for now
+
+    // Build the object for insertion, ensuring optional fields are handled correctly.
+    const insertPayload: Database['public']['Tables']['assets']['Insert'] = {
       user_id: userId,
-    }).select().single();
+      ticker: assetData.ticker,
+      name: assetData.ticker, // Using ticker as name for now
+      asset_type: assetData.type,
+      sector: assetData.sector || null,
+      notes: assetData.notes || null,
+    };
+
+    const { data, error } = await supabase
+      .from('assets')
+      .insert(insertPayload)
+      .select()
+      .single();
+
     if (error) throw error;
+    
     return {
       ...data,
       type_display: ASSET_TYPE_MAP[data.asset_type] || data.asset_type,
