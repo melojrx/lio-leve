@@ -171,6 +171,8 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: portfolioKeys.asset(newTransaction.asset_id) });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.assetSummary(newTransaction.asset_id) });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.summary() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.assets() });
+
 
       toast.success('Transação registrada com sucesso!');
     },
@@ -195,6 +197,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: portfolioKeys.asset(updatedTransaction.asset_id) });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.assetSummary(updatedTransaction.asset_id) });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.summary() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.assets() });
 
       toast.success('Transação atualizada com sucesso!');
     },
@@ -212,10 +215,10 @@ export function useDeleteTransaction() {
 
   return useMutation({
     mutationFn: (id: string) => apiClient.deleteTransaction(id),
-    onSuccess: (_, deletedId) => {
-      queryClient.removeQueries({ queryKey: portfolioKeys.transaction(deletedId) });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: portfolioKeys.transactions() });
       queryClient.invalidateQueries({ queryKey: portfolioKeys.summary() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.assets() });
 
       toast.success('Transação removida com sucesso!');
     },

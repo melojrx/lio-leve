@@ -95,11 +95,10 @@ const apiClient = {
   async createAsset(assetData: Omit<AssetCreateData, 'name'>): Promise<Asset> {
     const userId = await getUserId();
 
-    // Build the object for insertion, ensuring optional fields are handled correctly.
     const insertPayload: Database['public']['Tables']['assets']['Insert'] = {
       user_id: userId,
       ticker: assetData.ticker,
-      name: assetData.ticker, // Using ticker as name for now
+      name: assetData.ticker,
       asset_type: assetData.type,
       sector: assetData.sector || null,
       notes: assetData.notes || null,
@@ -149,7 +148,7 @@ const apiClient = {
       type: tx.transaction_type,
       asset_ticker: (tx.asset as { ticker: string })?.ticker || 'N/A',
       type_display: TRANSACTION_TYPE_MAP[tx.transaction_type] || tx.transaction_type,
-      total_amount: (tx.quantity * tx.unit_price + tx.fees).toString(),
+      total_amount: (tx.quantity * tx.unit_price + (tx.fees || 0)).toString(),
     }));
   },
 
@@ -171,8 +170,40 @@ const apiClient = {
       type: data.transaction_type,
       asset_ticker: (data.asset as { ticker: string })?.ticker || 'N/A',
       type_display: TRANSACTION_TYPE_MAP[data.transaction_type] || data.transaction_type,
-      total_amount: (data.quantity * data.unit_price + data.fees).toString(),
+      total_amount: (data.quantity * data.unit_price + (data.fees || 0)).toString(),
     };
+  },
+
+  async updateTransaction(id: string, txData: Partial<TransactionCreateData>): Promise<Transaction> {
+    const updatePayload: Partial<Database['public']['Tables']['transactions']['Update']> = {};
+    
+    if (txData.date) updatePayload.date = txData.date;
+    if (txData.quantity) updatePayload.quantity = parseFloat(txData.quantity);
+    if (txData.unit_price) updatePayload.unit_price = parseFloat(txData.unit_price);
+    if (txData.fees) updatePayload.fees = parseFloat(txData.fees);
+    if (txData.type) updatePayload.transaction_type = txData.type;
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .update(updatePayload)
+      .eq('id', id)
+      .select('*, asset:assets(ticker)')
+      .single();
+
+    if (error) throw error;
+
+    return {
+      ...data,
+      type: data.transaction_type,
+      asset_ticker: (data.asset as { ticker: string })?.ticker || 'N/A',
+      type_display: TRANSACTION_TYPE_MAP[data.transaction_type] || data.transaction_type,
+      total_amount: (data.quantity * data.unit_price + (data.fees || 0)).toString(),
+    };
+  },
+
+  async deleteTransaction(id: string): Promise<void> {
+    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    if (error) throw error;
   },
 
   async getPortfolioSummary(): Promise<PortfolioSummary> {
@@ -192,17 +223,25 @@ const apiClient = {
     return {
       assets_count: summary?.total_assets || 0,
       total_invested: summary?.total_invested || 0,
-      current_value: summary?.total_invested || 0, // Placeholder
-      profit_loss: '0', // Placeholder
-      profit_loss_percent: '0', // Placeholder
+      current_value: summary?.total_invested || 0,
+      profit_loss: '0',
+      profit_loss_percent: '0',
       allocation_by_type,
     };
   },
   
-  // Placeholder functions to avoid breaking the app
-  async getTransaction(id: string): Promise<Transaction | null> { return null; },
-  async updateTransaction(id: string, data: any): Promise<Transaction> { throw new Error("Not implemented"); },
-  async deleteTransaction(id: string): Promise<void> { throw new Error("Not implemented"); },
+  async getTransaction(id: string): Promise<Transaction | null> { 
+    const { data, error } = await supabase.from('transactions').select('*, asset:assets(ticker)').eq('id', id).single();
+    if (error) throw error;
+    return data ? {
+      ...data,
+      type: data.transaction_type,
+      asset_ticker: (data.asset as { ticker: string })?.ticker || 'N/A',
+      type_display: TRANSACTION_TYPE_MAP[data.transaction_type] || data.transaction_type,
+      total_amount: (data.quantity * data.unit_price + (data.fees || 0)).toString(),
+    } : null;
+  },
+  
   async getAssetSummary(id: string): Promise<AssetSummary> { return {}; },
 };
 
