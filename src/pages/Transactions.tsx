@@ -149,7 +149,7 @@ const Transactions = () => {
           <AlertDescription>
             Erro ao carregar transações. Por favor, tente novamente.
             {(transactionsError as Error)?.message && `: ${(transactionsError as Error).message}`}
-          </Aler tDescription>
+          </AlertDescription>
         </Alert>
       </div>
     );
