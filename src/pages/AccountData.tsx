@@ -6,11 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
 import { ShieldCheck, UserCog, KeyRound, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { BackButton } from "@/components/BackButton";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { AvatarUpload } from "@/components/AvatarUpload";
@@ -69,8 +68,8 @@ const AccountData = () => {
   const onSubmitProfile = (values: ProfileFormValues) => {
     const unmaskedValues = {
       ...values,
-      cpf: values.cpf.replace(/\D/g, ''),
-      phone: values.phone.replace(/\D/g, ''),
+      cpf: (values.cpf || '').replace(/\D/g, ''),
+      phone: (values.phone || '').replace(/\D/g, ''),
     };
     updateProfile.mutate(unmaskedValues);
   };
