@@ -8,8 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Star, RefreshCcw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchFX, fetchStocks, fetchBCBSeries } from "@/lib/market";
-import { getSimplePricesBRL } from "@/lib/crypto";
+import { fetchBCBSeries } from "@/lib/market";
+import { useQuotes, AssetIdentifier } from "@/hooks/useQuotes";
 import { cn } from "@/lib/utils";
 import { BackButton } from "@/components/BackButton";
 
@@ -40,12 +40,16 @@ function formatPct(n?: number) {
   return `${n > 0 ? "+" : ""}${formatNumber(n, 2)}%`;
 }
 
-const keyAssets = {
-  fx: ["USD/BRL", "EUR/BRL"],
-  stocks: ["^BVSP", "IFIX", "PETR4", "VALE3"],
-  crypto: ["BTC", "ETH"],
-  macro: ["CDI", "Selic", "IPCA"],
-};
+const assetsToFetch: AssetIdentifier[] = [
+  { ticker: 'USD-BRL', type: 'FX' },
+  { ticker: 'EUR-BRL', type: 'FX' },
+  { ticker: '^BVSP', type: 'STOCK' },
+  { ticker: 'IFIX', type: 'STOCK' },
+  { ticker: 'PETR4', type: 'STOCK' },
+  { ticker: 'VALE3', type: 'STOCK' },
+  { ticker: 'BTC', type: 'CRYPTO' },
+  { ticker: 'ETH', type: 'CRYPTO' },
+];
 
 const bcbSeries = [
   { id: 12, name: "CDI", unit: "% a.a." },
@@ -57,81 +61,55 @@ export default function Mercado() {
   const [q, setQ] = useState("");
   const { favs, toggle } = useFavorites();
 
-  // FX – 10s
-  const fxQuery = useQuery({
-    queryKey: ["fx", keyAssets.fx],
-    queryFn: () => fetchFX(["USD-BRL", "EUR-BRL"]),
-    refetchInterval: 10_000,
-  });
-
-  // Crypto – 10s
-  const cryptoQuery = useQuery({
-    queryKey: ["crypto", keyAssets.crypto],
-    queryFn: async () => {
-      const prices = await getSimplePricesBRL(["bitcoin", "ethereum"]);
-      return [
-        { symbol: "BTC", price: prices.bitcoin },
-        { symbol: "ETH", price: prices.ethereum },
-      ];
-    },
-    refetchInterval: 10_000,
-  });
-
-  // Stocks/Índices – 45s
-  const stocksQuery = useQuery({
-    queryKey: ["stocks", keyAssets.stocks],
-    queryFn: () => fetchStocks(["^BVSP", "IFIX", "PETR4", "VALE3"]),
+  const { data: quotes = [], isLoading: isLoadingQuotes, refetch: refetchQuotes } = useQuotes(assetsToFetch, {
     refetchInterval: 45_000,
   });
 
-  // Macro (BCB/SGS) – 60s
   const macroQuery = useQuery({
     queryKey: ["macro", bcbSeries.map((s) => s.id)],
     queryFn: () => fetchBCBSeries(bcbSeries),
     refetchInterval: 60_000,
   });
 
-  const isLoading = fxQuery.isLoading || cryptoQuery.isLoading || stocksQuery.isLoading || macroQuery.isLoading;
+  const isLoading = isLoadingQuotes || macroQuery.isLoading;
 
   const rows = useMemo(() => {
     const list: { key: string; label: string; value?: number | string; changePct?: number; group: string }[] = [];
 
-    // FX
-    fxQuery.data?.forEach((f) => {
-      list.push({ key: f.pair, label: f.pair, value: f.bid, changePct: f.pctChange, group: "Câmbio" });
+    quotes.forEach(q => {
+      let group = "Outros";
+      if (q.type === 'FX') group = "Câmbio";
+      else if (q.type === 'CRYPTO') group = "Cripto";
+      else if (q.type === 'STOCK') group = "Ações/Índices";
+
+      list.push({
+        key: q.symbol,
+        label: q.name || q.symbol,
+        value: q.price,
+        changePct: q.changePct ?? undefined,
+        group: group,
+      });
     });
 
-    // Stocks
-    stocksQuery.data?.forEach((s) => {
-      list.push({ key: s.symbol, label: s.shortName || s.symbol, value: s.regularMarketPrice, changePct: s.regularMarketChangePercent, group: "Ações/Índices" });
-    });
-
-    // Macro
     macroQuery.data?.forEach((m) => {
       list.push({ key: m.name, label: m.name, value: m.value, group: "Juros/Inflação" });
     });
 
-    // Crypto
-    cryptoQuery.data?.forEach((c) => {
-      list.push({ key: c.symbol, label: c.symbol, value: c.price, group: "Cripto" });
-    });
-
     return list;
-  }, [fxQuery.data, stocksQuery.data, macroQuery.data, cryptoQuery.data]);
+  }, [quotes, macroQuery.data]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     const base = term ? rows.filter((r) => r.key.toLowerCase().includes(term) || r.label.toLowerCase().includes(term) || r.group.toLowerCase().includes(term)) : rows;
-    // Ordena: favoritos primeiro
     return base.sort((a, b) => Number(favs.includes(b.key)) - Number(favs.includes(a.key)) || a.label.localeCompare(b.label));
   }, [rows, q, favs]);
 
   const refreshAll = () => {
-    fxQuery.refetch();
-    stocksQuery.refetch();
-    cryptoQuery.refetch();
+    refetchQuotes();
     macroQuery.refetch();
   };
+
+  const findQuote = (symbol: string) => quotes.find(item => item.symbol === symbol || item.symbol === symbol.replace('/', '-'));
 
   return (
     <>
@@ -148,76 +126,39 @@ export default function Mercado() {
           </div>
         </header>
 
-        {/* Cards principais */}
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8">
-          {/* FX cards */}
           {isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
+            Array.from({ length: 8 }).map((_, i) => (
               <Card key={`sk-${i}`}>
                 <CardHeader className="pb-2"><Skeleton className="h-5 w-32" /></CardHeader>
-                <CardContent className="pt-0 space-y-2">
-                  <Skeleton className="h-8 w-24" />
-                  <Skeleton className="h-4 w-16" />
-                </CardContent>
+                <CardContent className="pt-0 space-y-2"><Skeleton className="h-8 w-24" /><Skeleton className="h-4 w-16" /></CardContent>
               </Card>
             ))
           ) : (
             <>
-              {fxQuery.data?.map((f) => (
-                <Card key={f.pair}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{f.pair}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="flex items-baseline justify-between">
-                      <div className="text-2xl font-semibold">R$ {formatNumber(f.bid, 4)}</div>
-                      {f.pctChange !== undefined && (
-                        <Badge variant={f.pctChange >= 0 ? "default" : "secondary"} className={cn(f.pctChange >= 0 ? "text-green-600" : "text-red-600")}>{formatPct(f.pctChange)}</Badge>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">Atualizado: {f.updatedAt || "-"}</p>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Stocks highlights */}
-              {stocksQuery.data?.filter((s) => keyAssets.stocks.includes(s.symbol)).map((s) => (
-                <Card key={s.symbol}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{s.shortName || s.symbol}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="flex items-baseline justify-between">
-                      <div className="text-2xl font-semibold">{s.currency === "BRL" ? "R$ " : ""}{formatNumber(s.regularMarketPrice)}</div>
-                      {s.regularMarketChangePercent !== undefined && (
-                        <Badge variant={s.regularMarketChangePercent >= 0 ? "default" : "secondary"} className={cn(s.regularMarketChangePercent >= 0 ? "text-green-600" : "text-red-600")}>{formatPct(s.regularMarketChangePercent)}</Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Macro */}
+              {assetsToFetch.map(asset => {
+                const quote = findQuote(asset.ticker);
+                if (!quote) return null;
+                return (
+                  <Card key={quote.symbol}>
+                    <CardHeader className="pb-2"><CardTitle className="text-base">{quote.name || quote.symbol}</CardTitle></CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex items-baseline justify-between">
+                        <div className="text-2xl font-semibold">{quote.type === 'FX' ? `R$ ${formatNumber(quote.price, 4)}` : `R$ ${formatNumber(quote.price)}`}</div>
+                        {quote.changePercent !== null && (
+                          <Badge variant={quote.changePercent >= 0 ? "default" : "secondary"} className={cn(quote.changePercent >= 0 ? "text-green-600" : "text-red-600")}>{formatPct(quote.changePercent)}</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
               {macroQuery.data?.map((m) => (
                 <Card key={m.name}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{m.name}</CardTitle>
-                  </CardHeader>
+                  <CardHeader className="pb-2"><CardTitle className="text-base">{m.name}</CardTitle></CardHeader>
                   <CardContent className="pt-0">
                     <div className="text-2xl font-semibold">{formatNumber(m.value)} <span className="text-sm font-normal text-muted-foreground">{m.unit}</span></div>
                     <p className="mt-2 text-xs text-muted-foreground">Referência: {m.date || "-"}</p>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Crypto */}
-              {cryptoQuery.data?.map((c) => (
-                <Card key={c.symbol}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{c.symbol}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="text-2xl font-semibold">R$ {formatNumber(c.price)}</div>
                   </CardContent>
                 </Card>
               ))}
@@ -225,7 +166,6 @@ export default function Mercado() {
           )}
         </section>
 
-        {/* Tabela completa */}
         <section>
           <div className="rounded-lg border bg-card">
             <Table>
@@ -242,11 +182,7 @@ export default function Mercado() {
                 {filtered.map((r) => (
                   <TableRow key={r.key} className="hover:bg-muted/30">
                     <TableCell className="w-10">
-                      <button
-                        onClick={() => toggle(r.key)}
-                        aria-label={favs.includes(r.key) ? "Remover dos favoritos" : "Favoritar"}
-                        className="inline-flex items-center justify-center"
-                      >
+                      <button onClick={() => toggle(r.key)} aria-label={favs.includes(r.key) ? "Remover dos favoritos" : "Favoritar"} className="inline-flex items-center justify-center">
                         <Star className={cn("h-4 w-4", favs.includes(r.key) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground")} />
                       </button>
                     </TableCell>
@@ -254,11 +190,7 @@ export default function Mercado() {
                     <TableCell className="text-muted-foreground">{r.group}</TableCell>
                     <TableCell className="text-right">{typeof r.value === "number" ? (r.group === "Juros/Inflação" ? `${formatNumber(r.value)} %` : `R$ ${formatNumber(r.value)}`) : r.value || "-"}</TableCell>
                     <TableCell className="text-right">
-                      {r.changePct !== undefined ? (
-                        <span className={cn(r.changePct >= 0 ? "text-green-600" : "text-red-600")}>{formatPct(r.changePct)}</span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
+                      {r.changePct !== undefined ? (<span className={cn(r.changePct >= 0 ? "text-green-600" : "text-red-600")}>{formatPct(r.changePct)}</span>) : (<span className="text-muted-foreground">-</span>)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -267,17 +199,6 @@ export default function Mercado() {
           </div>
         </section>
       </main>
-
-      {/* Structured data */}
-      <script type="application/ld+json">
-        {JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          name: 'Mercado – Cotações em Tempo Real',
-          description: 'Cotações em tempo real: câmbio, ações, índices, juros, inflação e cripto.',
-          url: typeof window !== 'undefined' ? window.location.href : 'https://investorion.com.br/mercado',
-        })}
-      </script>
     </>
   );
 }
