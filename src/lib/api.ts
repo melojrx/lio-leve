@@ -45,6 +45,20 @@ export type AssetSummary = {
   // Define if needed later
 };
 
+// Types for Suggestions
+export type Suggestion = {
+  id: string;
+  user_id: string | null;
+  title: string;
+  description: string;
+  kind: 'ideia' | 'bug';
+  votes: number;
+  created_at: string;
+};
+
+export type SuggestionCreateData = Pick<Suggestion, 'title' | 'description' | 'kind'>;
+
+
 const getUser = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("User not authenticated.");
@@ -309,6 +323,34 @@ const apiClient = {
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
     return data.publicUrl;
+  },
+
+  // Suggestions Methods
+  async getSuggestions(): Promise<Suggestion[]> {
+    const { data, error } = await supabase
+      .from('suggestions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async createSuggestion(suggestionData: SuggestionCreateData): Promise<Suggestion> {
+    const user = await getUser();
+    const { data, error } = await supabase
+      .from('suggestions')
+      .insert({ ...suggestionData, user_id: user.id })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async addVoteToSuggestion(suggestionId: string): Promise<void> {
+    const { error } = await supabase.rpc('increment_suggestion_votes', {
+      suggestion_id: suggestionId,
+    });
+    if (error) throw error;
   },
 };
 
