@@ -3,17 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
-import { ShieldCheck, UserCog, KeyRound, Loader2 } from "lucide-react";
+import { ShieldCheck, UserCog, KeyRound, Loader2, Eye, EyeOff } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Skeleton } from "@/components/ui/skeleton";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
 type ProfileFormValues = {
   full_name: string;
@@ -21,6 +24,16 @@ type ProfileFormValues = {
   phone: string;
   birth_date: string;
 };
+
+const passwordFormSchema = z.object({
+  password: z.string().min(6, { message: "A senha deve ter no mínimo 6 caracteres." }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem.",
+  path: ["confirmPassword"],
+});
+
+type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 // Funções de máscara
 const maskCPF = (value: string) => {
@@ -41,25 +54,32 @@ const maskPhone = (value: string) => {
 };
 
 const AccountData = () => {
-  const { user } = useAuth();
+  const { user, updatePassword } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") || "perfil";
   
   const { data: profile, isLoading: isLoadingProfile } = useProfile();
   const updateProfile = useUpdateProfile();
 
-  const form = useForm<ProfileFormValues>();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const profileForm = useForm<ProfileFormValues>();
+  const passwordForm = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordFormSchema),
+    defaultValues: { password: "", confirmPassword: "" },
+  });
 
   useEffect(() => {
     if (profile) {
-      form.reset({
+      profileForm.reset({
         full_name: profile.full_name || '',
         cpf: profile.cpf ? maskCPF(profile.cpf) : '',
         phone: profile.phone ? maskPhone(profile.phone) : '',
         birth_date: profile.birth_date || '',
       });
     }
-  }, [profile, form]);
+  }, [profile, profileForm]);
 
   const handleAvatarUpload = (newUrl: string) => {
     updateProfile.mutate({ avatar_url: newUrl });
@@ -72,6 +92,18 @@ const AccountData = () => {
       phone: (values.phone || '').replace(/\D/g, ''),
     };
     updateProfile.mutate(unmaskedValues);
+  };
+
+  const onSubmitPassword = async (values: PasswordFormValues) => {
+    try {
+      await updatePassword(values.password);
+      toast.success("Senha alterada com sucesso!");
+      passwordForm.reset();
+    } catch (error) {
+      toast.error("Erro ao alterar a senha", {
+        description: "Ocorreu um problema. Tente novamente mais tarde.",
+      });
+    }
   };
 
   const handleTabChange = (value: string) => {
@@ -123,10 +155,10 @@ const AccountData = () => {
                   fallbackName={profile?.full_name || user?.email || ''}
                 />
                 <div className="md:col-span-2">
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmitProfile)} className="space-y-6">
+                  <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onSubmitProfile)} className="space-y-6">
                       <FormField
-                        control={form.control}
+                        control={profileForm.control}
                         name="full_name"
                         render={({ field }) => (
                           <FormItem>
@@ -138,7 +170,7 @@ const AccountData = () => {
                       />
                       <div className="grid gap-6 sm:grid-cols-2">
                         <FormField
-                          control={form.control}
+                          control={profileForm.control}
                           name="cpf"
                           render={({ field }) => (
                             <FormItem>
@@ -149,7 +181,7 @@ const AccountData = () => {
                           )}
                         />
                         <FormField
-                          control={form.control}
+                          control={profileForm.control}
                           name="phone"
                           render={({ field }) => (
                             <FormItem>
@@ -161,7 +193,7 @@ const AccountData = () => {
                         />
                       </div>
                       <FormField
-                        control={form.control}
+                        control={profileForm.control}
                         name="birth_date"
                         render={({ field }) => (
                           <FormItem>
@@ -190,9 +222,71 @@ const AccountData = () => {
 
           <TabsContent value="seguranca" className="mt-6">
             <Card>
-              <CardHeader><CardTitle>Segurança</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Alterar Senha</CardTitle>
+                <CardDescription>
+                  Para sua segurança, recomendamos usar uma senha forte que você não usa em outro lugar.
+                </CardDescription>
+              </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Funcionalidade de alteração de senha em desenvolvimento.</p>
+                <Form {...passwordForm}>
+                  <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} className="space-y-6 max-w-md">
+                    <FormField
+                      control={passwordForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nova Senha</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input type={showPassword ? "text" : "password"} {...field} placeholder="••••••••" />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                onClick={() => setShowPassword(!showPassword)}
+                              >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={passwordForm.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirmar Nova Senha</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input type={showConfirmPassword ? "text" : "password"} {...field} placeholder="••••••••" />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              >
+                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end">
+                      <Button type="submit" disabled={passwordForm.formState.isSubmitting}>
+                        {passwordForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Salvar nova senha
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
               </CardContent>
             </Card>
           </TabsContent>
