@@ -73,13 +73,13 @@ const Login = () => {
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm text-muted-foreground">
-                  E-mail, CPF ou celular
+                  E-mail
                 </Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="793.357.483-15"
+                  placeholder="voce@email.com"
                   required
                   className="h-12 bg-slate-800 border-slate-700 text-white placeholder:text-slate-400"
                 />
