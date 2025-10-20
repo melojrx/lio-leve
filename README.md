@@ -1,6 +1,6 @@
 <div align="center">
 	<img src="docs/assets/logo.svg" alt="Logo investorion" height="72" />
-	<h1>🚀 Investorion.com.br - Plataforma de Investimentos</h1>
+	<h1>🚀 Investiorion.com.br - Plataforma de Investimentos</h1>
 	<p>Plataforma 100% gratuita para acompanhamento de carteiras de investimento com dados governamentais em primeira mão.</p>
 </div>
 
