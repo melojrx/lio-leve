@@ -72,7 +72,7 @@ const Dashboard = () => {
   if (isLoadingSummary || isLoadingAssets) {
     return (
       <div className="min-h-screen page-shell-gradient">
-        <SEO title="Dashboard — investorion.com.br" />
+        <SEO title="Dashboard — investiorion.com.br" />
         <section className="container py-10 md:py-14 space-y-6">
           <div className="grid gap-4 md:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
@@ -90,7 +90,7 @@ const Dashboard = () => {
   if (summaryError || assetsError) {
     return (
       <div className="container py-10">
-        <SEO title="Dashboard — investorion.com.br" />
+        <SEO title="Dashboard — investiorion.com.br" />
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -105,7 +105,7 @@ const Dashboard = () => {
   if (!summary || summary.assets_count === 0) {
     return (
       <div className="container py-10 text-center">
-        <SEO title="Dashboard — investorion.com.br" />
+        <SEO title="Dashboard — investiorion.com.br" />
         <div className="grid place-items-center h-12 w-12 rounded-full border bg-muted mx-auto">
           <Wallet className="h-6 w-6 text-muted-foreground" />
         </div>
@@ -128,7 +128,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen page-shell-gradient">
       <SEO
-        title="Dashboard — investorion.com.br"
+        title="Dashboard — investiorion.com.br"
         description="Resumo do seu patrimônio e desempenho."
       />
       <section className="container py-10 md:py-14">

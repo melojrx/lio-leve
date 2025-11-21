@@ -42,7 +42,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-background dark:bg-slate-950">
-      <SEO title="Entrar — investorion.com.br" description="Acesse sua conta investorion.com.br." />
+      <SEO title="Entrar — investiorion.com.br" description="Acesse sua conta investiorion.com.br." />
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* Left side - Branding */}
         <div className="hidden lg:flex items-center justify-center bg-slate-950 text-white relative overflow-hidden">
@@ -53,7 +53,7 @@ const Login = () => {
                 <LineChart className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-white">investorion.com.br</h1>
+                <h1 className="text-4xl font-bold text-white">investiorion.com.br</h1>
                 <p className="text-slate-400 text-lg">as a lifestyle</p>
               </div>
             </div>

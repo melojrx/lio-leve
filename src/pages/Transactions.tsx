@@ -108,7 +108,7 @@ const Transactions = () => {
 
   // Filtered and sorted transactions
   const filteredAndSortedTransactions = useMemo(() => {
-    let filtered = transactions.filter((tx) => {
+    const filtered = transactions.filter((tx) => {
       const searchMatch = tx.asset_ticker.toLowerCase().includes(searchQuery.toLowerCase());
       const typeMatch = typeFilter === "all" || tx.type === typeFilter;
       return searchMatch && typeMatch;
@@ -184,7 +184,7 @@ const Transactions = () => {
   if (isLoadingTransactions || isLoadingAssets) {
     return (
       <div className="min-h-screen">
-        <SEO title="Transações — investorion.com.br" />
+        <SEO title="Transações — investiorion.com.br" />
         <section className="container py-10 md:py-14">
           <BackButton />
           <div className="flex items-center justify-between mb-6">
@@ -200,7 +200,7 @@ const Transactions = () => {
   if (transactionsError) {
     return (
       <div className="container py-10">
-        <SEO title="Transações — investorion.com.br" />
+        <SEO title="Transações — investiorion.com.br" />
         <BackButton />
         <Alert variant="destructive" className="mt-6">
           <AlertCircle className="h-4 w-4" />
@@ -215,7 +215,7 @@ const Transactions = () => {
 
   return (
     <div className="min-h-screen">
-      <SEO title="Transações — investorion.com.br" description="Histórico de compras e vendas." />
+      <SEO title="Transações — investiorion.com.br" description="Histórico de compras e vendas." />
       <section className="container py-10 md:py-14">
         <BackButton />
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -271,7 +271,7 @@ const Transactions = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar por ticker..." className="pl-9 w-full sm:w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                  <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TransactionType | "all")}>
             <SelectTrigger className="w-full sm:w-48"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">Todos os tipos</SelectItem><SelectItem value="BUY">Compra</SelectItem><SelectItem value="SELL">Venda</SelectItem></SelectContent>
           </Select>

@@ -22,9 +22,9 @@ export function useUpdateProfile() {
       queryClient.invalidateQueries({ queryKey: profileKeys.profile() });
       toast.success('Perfil atualizado com sucesso!');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error('Erro ao atualizar perfil', {
-        description: error.message || 'Não foi possível salvar as alterações.',
+        description: error instanceof Error ? error.message : 'Não foi possível salvar as alterações.',
       });
     },
   });

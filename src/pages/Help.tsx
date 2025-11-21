@@ -4,7 +4,7 @@ import { BackButton } from "@/components/BackButton";
 const Help = () => {
   return (
     <div className="min-h-screen">
-      <SEO title="Ajuda — investorion.com.br" description="Central de ajuda e suporte." canonical="/ajuda" />
+      <SEO title="Ajuda — investiorion.com.br" description="Central de ajuda e suporte." canonical="/ajuda" />
       <section className="container py-10 md:py-14">
         <BackButton />
         <h1 className="text-2xl font-semibold">Ajuda</h1>

@@ -21,8 +21,9 @@ export function useCreateSuggestion() {
       queryClient.invalidateQueries({ queryKey: suggestionKeys.all });
       toast.success("Sugestão enviada!", { description: "Obrigado por sua contribuição." });
     },
-    onError: (error: any) => {
-      toast.error("Falha ao enviar", { description: error.message || "Não foi possível salvar sua sugestão." });
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Não foi possível salvar sua sugestão.";
+      toast.error("Falha ao enviar", { description: message });
     },
   });
 }
@@ -34,8 +35,9 @@ export function useAddVote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: suggestionKeys.all });
     },
-    onError: (error: any) => {
-      toast.error("Erro ao votar", { description: error.message || "Tente novamente mais tarde." });
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Tente novamente mais tarde.";
+      toast.error("Erro ao votar", { description: message });
     },
   });
 }

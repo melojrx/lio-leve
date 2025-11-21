@@ -11,13 +11,17 @@ const Tooltip = ({ className, children, ...props }: React.ComponentProps<"div">)
   </div>
 )
 
-const TooltipTrigger = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<"button"> & { asChild?: boolean }
->(({ className, asChild, children, ...props }, ref) => {
+type TooltipTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean };
+
+const TooltipTrigger = React.forwardRef<HTMLButtonElement, TooltipTriggerProps>(({ className, asChild, children, ...props }, ref) => {
   if (asChild) {
+    const { onClick, ...rest } = props;
     return (
-      <span className={cn("inline-flex items-center focus:outline-none", className)} {...(props as any)}>
+      <span
+        className={cn("inline-flex items-center focus:outline-none", className)}
+        onClick={onClick as React.MouseEventHandler<HTMLSpanElement>}
+        {...(rest as React.HTMLAttributes<HTMLSpanElement>)}
+      >
         {children}
       </span>
     )

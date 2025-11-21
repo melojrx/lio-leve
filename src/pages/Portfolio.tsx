@@ -161,14 +161,14 @@ const Portfolio = () => {
     );
   };
 
-  const totalAmount = summary ? parseFloat(summary.total_invested) : 0;
+  const totalAmount = summary?.total_invested ?? 0;
   const largestClass = compositionData.length > 0 ? compositionData[0] : null;
 
   // Loading state
   if (isLoadingAssets || isLoadingSummary) {
     return (
       <div className="min-h-screen page-shell-gradient">
-        <SEO title="Minha Carteira — investorion.com.br" />
+        <SEO title="Minha Carteira — investiorion.com.br" />
         <section className="container py-10 md:py-14">
           <BackButton />
           <div className="flex items-center justify-between mb-6">
@@ -185,7 +185,7 @@ const Portfolio = () => {
   if (assetsError) {
     return (
       <div className="container py-10">
-        <SEO title="Minha Carteira — investorion.com.br" />
+        <SEO title="Minha Carteira — investiorion.com.br" />
         <BackButton />
         <Alert variant="destructive" className="mt-6">
           <AlertCircle className="h-4 w-4" />
@@ -201,7 +201,7 @@ const Portfolio = () => {
   return (
     <div className="min-h-screen page-shell-gradient">
       <SEO
-        title="Minha Carteira — investorion.com.br"
+        title="Minha Carteira — investiorion.com.br"
         description="Resumo da carteira, composição e histórico de aportes."
         canonical="/carteira"
       />

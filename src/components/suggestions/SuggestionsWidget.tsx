@@ -29,7 +29,6 @@ export default function SuggestionsWidget() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"votes" | "recent">("votes");
 
-  // Data fetching from Supabase
   const { data: items = [], isLoading, error } = useSuggestions();
   const createSuggestion = useCreateSuggestion();
   const addVote = useAddVote();
@@ -80,7 +79,7 @@ export default function SuggestionsWidget() {
     const label = k === "bug" ? "Bug" : "Ideia";
     const variant = k === "bug" ? "destructive" : "secondary";
     return (
-      <Badge variant={variant as any} className="gap-1">
+      <Badge variant={variant} className="gap-1">
         <Icon className="h-3.5 w-3.5" /> {label}
       </Badge>
     );

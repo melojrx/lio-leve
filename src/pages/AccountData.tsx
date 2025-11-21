@@ -17,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { profileKeys } from "@/hooks/useProfile";
 
 type ProfileFormValues = {
   full_name: string;
@@ -26,6 +28,7 @@ type ProfileFormValues = {
 };
 
 const passwordFormSchema = z.object({
+  currentPassword: z.string().min(1, { message: "Informe sua senha atual." }),
   password: z.string().min(6, { message: "A senha deve ter no mínimo 6 caracteres." }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -57,17 +60,26 @@ const AccountData = () => {
   const { user, updatePassword } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") || "perfil";
-  
+
   const { data: profile, isLoading: isLoadingProfile } = useProfile();
   const updateProfile = useUpdateProfile();
+  const queryClient = useQueryClient();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 
-  const profileForm = useForm<ProfileFormValues>();
+  const profileForm = useForm<ProfileFormValues>({
+    defaultValues: {
+      full_name: '',
+      cpf: '',
+      phone: '',
+      birth_date: '',
+    },
+  });
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
-    defaultValues: { password: "", confirmPassword: "" },
+    defaultValues: { currentPassword: "", password: "", confirmPassword: "" },
   });
 
   useEffect(() => {
@@ -81,8 +93,12 @@ const AccountData = () => {
     }
   }, [profile, profileForm]);
 
-  const handleAvatarUpload = (newUrl: string) => {
-    updateProfile.mutate({ avatar_url: newUrl });
+  const handleAvatarUpload = async (newUrl: string) => {
+    // Atualiza o cache imediatamente para refletir a nova foto
+    queryClient.setQueryData(profileKeys.profile(), (old) =>
+      old ? { ...old, avatar_url: newUrl } : old
+    );
+    await updateProfile.mutateAsync({ avatar_url: newUrl });
   };
 
   const onSubmitProfile = (values: ProfileFormValues) => {
@@ -96,7 +112,7 @@ const AccountData = () => {
 
   const onSubmitPassword = async (values: PasswordFormValues) => {
     try {
-      await updatePassword(values.password);
+      await updatePassword(values.password, { currentPassword: values.currentPassword });
       toast.success("Senha alterada com sucesso!");
       passwordForm.reset();
     } catch (error) {
@@ -122,7 +138,7 @@ const AccountData = () => {
   return (
     <div className="min-h-screen">
       <SEO
-        title="Dados da Conta — investorion.com.br"
+        title="Dados da Conta — investiorion.com.br"
         description="Gerencie seu perfil, privacidade e senha com segurança."
         canonical="/conta/dados"
       />
@@ -233,6 +249,30 @@ const AccountData = () => {
                   <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} className="space-y-6 max-w-md">
                     <FormField
                       control={passwordForm.control}
+                      name="currentPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Senha atual</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input type={showCurrentPassword ? "text" : "password"} {...field} placeholder="••••••••" autoComplete="current-password" />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              >
+                                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={passwordForm.control}
                       name="password"
                       render={({ field }) => (
                         <FormItem>
@@ -296,7 +336,7 @@ const AccountData = () => {
               <CardHeader><CardTitle>Privacidade e Uso de Dados</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">Leia e entenda nossas diretrizes de privacidade e uso de dados. Mantemos seus dados seguros e utilizamos apenas para oferecer os serviços da plataforma.</p>
-                <Button variant="link" asChild className="p-0"><a href="mailto:dpo@investorion.com.br">Falar com o DPO</a></Button>
+                <Button variant="link" asChild className="p-0"><a href="mailto:dpo@investiorion.com.br">Falar com o DPO</a></Button>
               </CardContent>
             </Card>
           </TabsContent>

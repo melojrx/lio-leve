@@ -23,7 +23,7 @@ const Account = () => {
   return (
     <div className="min-h-screen">
       <SEO
-        title="Conta — investorion.com.br"
+        title="Conta — investiorion.com.br"
         description="Perfil, segurança e preferências da sua conta."
         canonical="/conta"
       />

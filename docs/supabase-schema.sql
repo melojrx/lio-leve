@@ -57,6 +57,25 @@ CREATE TABLE blog_posts (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 5. Tabela de Sugestões
+CREATE TABLE suggestions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('ideia', 'bug')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Tabela de Votos das Sugestões
+CREATE TABLE suggestion_votes (
+  suggestion_id UUID REFERENCES suggestions(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (suggestion_id, user_id)
+);
+
 -- ============================================
 -- ÍNDICES PARA PERFORMANCE
 -- ============================================
@@ -69,6 +88,10 @@ CREATE INDEX idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX idx_transactions_date ON transactions(date DESC);
 CREATE INDEX idx_blog_posts_slug ON blog_posts(slug);
 CREATE INDEX idx_blog_posts_published ON blog_posts(published) WHERE published = TRUE;
+CREATE INDEX idx_suggestions_user_id ON suggestions(user_id);
+CREATE INDEX idx_suggestions_kind ON suggestions(kind);
+CREATE INDEX idx_suggestions_created_at ON suggestions(created_at DESC);
+CREATE INDEX idx_suggestion_votes_suggestion_id ON suggestion_votes(suggestion_id);
 
 -- ============================================
 -- TRIGGERS PARA UPDATED_AT
@@ -92,6 +115,10 @@ CREATE TRIGGER update_assets_updated_at
 
 CREATE TRIGGER update_blog_posts_updated_at 
   BEFORE UPDATE ON blog_posts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_suggestions_updated_at 
+  BEFORE UPDATE ON suggestions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
@@ -180,6 +207,8 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suggestions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suggestion_votes ENABLE ROW LEVEL SECURITY;
 
 -- PROFILES
 CREATE POLICY "Users can view own profile"
@@ -236,6 +265,36 @@ CREATE POLICY "Authors can update own posts"
 CREATE POLICY "Authors can delete own posts"
   ON blog_posts FOR DELETE
   USING (auth.uid() = author_id);
+
+-- SUGGESTIONS
+CREATE POLICY "Anyone can read suggestions"
+  ON suggestions FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can insert own suggestions"
+  ON suggestions FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Authors can update own suggestions"
+  ON suggestions FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Authors can delete own suggestions"
+  ON suggestions FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- SUGGESTION VOTES
+CREATE POLICY "Anyone can read suggestion votes"
+  ON suggestion_votes FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can vote once per suggestion"
+  ON suggestion_votes FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can remove own vote"
+  ON suggestion_votes FOR DELETE
+  USING (auth.uid() = user_id);
 
 -- ============================================
 -- VIEWS PARA DASHBOARD

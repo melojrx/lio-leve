@@ -9,7 +9,7 @@ const Settings = () => {
   const current = theme === "dark" || resolvedTheme === "dark" ? "dark" : "light";
   return (
     <div className="min-h-screen">
-      <SEO title="Configurações — investorion.com.br" description="Preferências da conta e suporte." />
+      <SEO title="Configurações — investiorion.com.br" description="Preferências da conta e suporte." />
       <section className="container py-10 md:py-14">
         <BackButton />
         <h1 className="text-2xl font-semibold">Configurações</h1>

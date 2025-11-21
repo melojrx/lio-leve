@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/http';
 
 export type AssetIdentifier = {
   ticker: string;
@@ -14,22 +14,31 @@ export type Quote = {
   type: 'STOCK' | 'CRYPTO' | 'FX';
 };
 
+type QuoteApi = {
+  symbol: string;
+  name?: string | null;
+  price: number;
+  change_percent?: number | null;
+  type: AssetIdentifier['type'];
+};
+
 async function fetchQuotes(assets: AssetIdentifier[]): Promise<Quote[]> {
   if (!assets || assets.length === 0) {
     return [];
   }
 
-  const { data, error } = await supabase.functions.invoke('get-quote', {
-    body: { assets },
+  const data = await apiFetch<QuoteApi[]>('/quotes/batch', {
+    method: 'POST',
+    body: JSON.stringify(assets),
   });
 
-  if (error) {
-    console.error("Edge function error:", error);
-    throw new Error(`Falha ao buscar cotações: ${error.message}`);
-  }
-
-  // A resposta da função está aninhada em um objeto 'data'
-  return (data?.data as Quote[]) || [];
+  return data.map((item) => ({
+    symbol: item.symbol,
+    name: item.name || item.symbol,
+    price: item.price,
+    changePercent: item.change_percent ?? null,
+    type: item.type,
+  }));
 }
 
 export function useQuotes(assets: AssetIdentifier[], options?: { refetchInterval?: number }) {

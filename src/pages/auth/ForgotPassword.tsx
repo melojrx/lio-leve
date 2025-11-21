@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LineChart } from "lucide-react";
 
 const ForgotPassword = () => {
   const { sendPasswordResetEmail } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
 
@@ -19,10 +20,15 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      await sendPasswordResetEmail(email);
-      toast.success("E-mail enviado!", {
-        description: "Verifique sua caixa de entrada para redefinir sua senha.",
+      const token = await sendPasswordResetEmail(email);
+      toast.success("Pedido recebido!", {
+        description: token
+          ? "Use o link abaixo para definir uma nova senha."
+          : "Se este e-mail existir, você receberá instruções em instantes.",
       });
+      if (token) {
+        navigate(`/update-password?token=${encodeURIComponent(token)}`, { replace: true });
+      }
     } catch (error) {
       toast.error("Falha ao enviar e-mail", {
         description: "Não foi possível enviar o e-mail de redefinição. Verifique o endereço e tente novamente.",
@@ -34,7 +40,7 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen bg-background dark:bg-slate-950">
-      <SEO title="Esqueci a Senha — investorion.com.br" description="Recupere o acesso à sua conta investorion.com.br." />
+      <SEO title="Esqueci a Senha — investiorion.com.br" description="Recupere o acesso à sua conta investiorion.com.br." />
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* Left side - Branding */}
         <div className="hidden lg:flex items-center justify-center bg-slate-950 text-white relative overflow-hidden">
@@ -45,7 +51,7 @@ const ForgotPassword = () => {
                 <LineChart className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-white">investorion.com.br</h1>
+                <h1 className="text-4xl font-bold text-white">investiorion.com.br</h1>
                 <p className="text-slate-400 text-lg">as a lifestyle</p>
               </div>
             </div>

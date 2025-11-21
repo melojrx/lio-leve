@@ -1,83 +1,116 @@
-import { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Session, User } from '@supabase/supabase-js';
+import { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
+import { apiClient, Profile } from '@/lib/api';
+import { apiFetch, clearTokens, getStoredTokens, saveTokens } from '@/lib/http';
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: Profile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<any>;
-  register: (email: string, password: string, firstName: string, lastName: string) => Promise<any>;
-  logout: () => Promise<any>;
-  sendPasswordResetEmail: (email: string) => Promise<void>;
-  updatePassword: (password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  logout: () => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<string | null>;
+  updatePassword: (password: string, options?: { currentPassword?: string; resetToken?: string }) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    const restore = async () => {
+      const tokens = getStoredTokens();
+      if (!tokens) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const profile = await apiClient.getProfile();
+        setUser(profile);
+      } catch (error) {
+        console.error('[auth] falha ao restaurar sessão', error);
+        clearTokens();
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    restore();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-  };
+  const login = useCallback(async (email: string, password: string) => {
+    const body = new URLSearchParams();
+    body.append('username', email);
+    body.append('password', password);
 
-  const register = async (email: string, password: string, firstName: string, lastName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: `${firstName} ${lastName}`,
-        },
-      },
+    const tokens = await apiFetch<{ access_token: string; refresh_token: string }>('/auth/token', {
+      method: 'POST',
+      body,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
-    if (error) throw error;
-  };
 
-  const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-  };
+    saveTokens(tokens);
+    const profile = await apiClient.getProfile();
+    setUser(profile);
+  }, []);
+
+  const register = useCallback(async (email: string, password: string, firstName: string, lastName: string) => {
+    await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        password,
+        full_name: `${firstName} ${lastName}`.trim() || email,
+      }),
+    });
+
+    await login(email, password);
+  }, [login]);
+
+  const logout = useCallback(async () => {
+    clearTokens();
+    setUser(null);
+  }, []);
 
   const sendPasswordResetEmail = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
+    const data = await apiFetch<{ reset_token: string | null }>('/auth/request-password-reset', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
     });
-    if (error) throw error;
+    const token = data?.reset_token || null;
+    if (token) {
+      sessionStorage.setItem('investorion.reset_token', token);
+    }
+    return token;
   };
 
-  const updatePassword = async (password: string) => {
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) throw error;
+  const updatePassword = async (password: string, options?: { currentPassword?: string; resetToken?: string }) => {
+    if (options?.resetToken) {
+      const tokens = await apiFetch<{ access_token: string; refresh_token: string }>('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ reset_token: options.resetToken, new_password: password }),
+      });
+      saveTokens(tokens);
+      const profile = await apiClient.getProfile();
+      setUser(profile);
+      return;
+    }
+
+    if (!options?.currentPassword) {
+      throw new Error('Informe a senha atual para alterar a senha.');
+    }
+
+    await apiFetch('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: options.currentPassword, new_password: password }),
+    });
   };
 
   const value = {
     user,
-    session,
     loading,
     login,
     register,

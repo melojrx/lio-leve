@@ -8,6 +8,7 @@ export type Json =
 
 export type AssetType = "STOCK" | "FII" | "CRYPTO" | "ETF" | "RENDA_FIXA" | "FUND" | "BDR" | "OTHER";
 export type TransactionType = "BUY" | "SELL" | "TRANSFER";
+export type SuggestionKind = "bug" | "ideia";
 
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type ProfileUpdateData = Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'email'>>;
@@ -97,6 +98,42 @@ export interface Database {
           birth_date?: string | null
         }
       }
+      suggestions: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          description: string
+          kind: SuggestionKind
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          description: string
+          kind: SuggestionKind
+        }
+        Update: {
+          title?: string
+          description?: string
+          kind?: SuggestionKind
+        }
+      }
+      suggestion_votes: {
+        Row: {
+          suggestion_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          suggestion_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: Partial<Database["public"]["Tables"]["suggestion_votes"]["Insert"]>
+      }
     }
     Views: {
       portfolio_summary: {
@@ -117,6 +154,6 @@ export interface Database {
         }
       }
     }
-    Functions: {}
+    Functions: Record<string, never>
   }
 }

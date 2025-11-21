@@ -1,69 +1,6 @@
-import { supabase } from './supabase';
-import { Database, AssetType, TransactionType, Profile, ProfileUpdateData } from '@/types/database.types';
-
-// Application-specific types
-export type Asset = Database['public']['Tables']['assets']['Row'] & {
-  type_display: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  status_display: string;
-};
-
-export type AssetCreateData = {
-  ticker: string;
-  name: string;
-  type: AssetType;
-  sector?: string;
-  notes?: string;
-};
-
-export type Transaction = Omit<Database['public']['Tables']['transactions']['Row'], 'transaction_type'> & {
-  type: TransactionType;
-  asset_ticker: string;
-  type_display: string;
-  total_amount: string;
-};
-
-export type TransactionCreateData = {
-  asset: string;
-  type: TransactionType;
-  quantity: string;
-  unit_price: string;
-  fees: string;
-  date: string;
-};
-
-export type PortfolioSummary = {
-  assets_count: number | null;
-  total_invested: number | null;
-  current_value: number | null;
-  profit_loss: string;
-  profit_loss_percent: string;
-  allocation_by_type: Record<string, number | null>;
-};
-
-export type AssetSummary = {
-  // Define if needed later
-};
-
-// Types for Suggestions
-export type Suggestion = {
-  id: string;
-  user_id: string | null;
-  title: string;
-  description: string;
-  kind: 'ideia' | 'bug';
-  votes: number;
-  created_at: string;
-};
-
-export type SuggestionCreateData = Pick<Suggestion, 'title' | 'description' | 'kind'>;
-
-
-const getUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("User not authenticated.");
-  return user;
-};
+import { apiFetch } from '@/lib/http';
+import { getApiBaseUrl } from '@/lib/http';
+import { AssetType, TransactionType } from '@/types/database.types';
 
 const ASSET_TYPE_MAP: Record<AssetType, string> = {
   STOCK: "Ação",
@@ -83,274 +20,342 @@ const TRANSACTION_TYPE_MAP: Record<TransactionType, string> = {
   TRANSFER: "Transferência",
 };
 
+type AssetApi = {
+  id: string;
+  user_id: string;
+  ticker: string;
+  name: string;
+  asset_type: AssetType;
+  sector: string | null;
+  quantity: number | string;
+  average_price: number | string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type TransactionApi = {
+  id: string;
+  asset_id: string;
+  user_id: string;
+  transaction_type: TransactionType;
+  quantity: number | string;
+  unit_price: number | string;
+  fees: number | string;
+  date: string;
+  created_at: string;
+  notes?: string | null;
+};
+
+type PortfolioSummaryApi = {
+  total_assets: number | null;
+  total_transactions: number | null;
+  total_invested: number | string | null;
+};
+
+type AllocationItemApi = {
+  asset_type: AssetType;
+  asset_count: number | null;
+  type_total: number | string | null;
+  percentage: number | string | null;
+};
+
+type AllocationResponse = {
+  items: AllocationItemApi[];
+};
+
+export type Asset = AssetApi & {
+  type_display: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  status_display: string;
+};
+
+export type AssetCreateData = {
+  ticker: string;
+  name?: string;
+  type: AssetType;
+  sector?: string;
+  notes?: string;
+};
+
+export type Transaction = Omit<TransactionApi, 'transaction_type'> & {
+  type: TransactionType;
+  asset_ticker: string;
+  type_display: string;
+  total_amount: string;
+};
+
+export type TransactionCreateData = {
+  asset: string;
+  type: TransactionType;
+  quantity: string;
+  unit_price: string;
+  fees: string;
+  date: string;
+};
+
+export type PortfolioSummary = {
+  assets_count: number;
+  total_invested: number;
+  current_value: number;
+  profit_loss: string;
+  profit_loss_percent: string;
+  allocation_by_type: Record<string, number>;
+};
+
+export type AssetSummary = Record<string, never>;
+
+export type Profile = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  created_at?: string;
+  updated_at?: string;
+  cpf?: string | null;
+  phone?: string | null;
+  birth_date?: string | null;
+};
+
+export type ProfileUpdateData = Partial<Profile>;
+
+// Types for Suggestions
+export type Suggestion = {
+  id: string;
+  user_id: string | null;
+  title: string;
+  description: string;
+  kind: 'ideia' | 'bug';
+  votes: number;
+  created_at: string;
+};
+
+export type SuggestionCreateData = Pick<Suggestion, 'title' | 'description' | 'kind'>;
+
+const toNumber = (value: number | string | null | undefined) => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return parseFloat(value);
+  return 0;
+};
+
+const mapAsset = (asset: AssetApi): Asset => ({
+  ...asset,
+  quantity: toNumber(asset.quantity),
+  average_price: toNumber(asset.average_price),
+  type_display: ASSET_TYPE_MAP[asset.asset_type] || asset.asset_type,
+  status: asset.is_active ? 'ACTIVE' : 'INACTIVE',
+  status_display: asset.is_active ? 'Ativo' : 'Inativo',
+});
+
+const mapTransaction = (tx: TransactionApi, assetTicker?: string): Transaction => {
+  const totalAmount = toNumber(tx.quantity) * toNumber(tx.unit_price) + toNumber(tx.fees);
+  return {
+    ...tx,
+    quantity: toNumber(tx.quantity),
+    unit_price: toNumber(tx.unit_price),
+    fees: toNumber(tx.fees),
+    type: tx.transaction_type,
+    asset_ticker: assetTicker || 'N/A',
+    type_display: TRANSACTION_TYPE_MAP[tx.transaction_type] || tx.transaction_type,
+    total_amount: totalAmount.toString(),
+  };
+};
+
 const apiClient = {
-  // ... (asset and transaction methods remain the same)
+  normalizeMediaUrl(url?: string | null): string | null {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const base = getApiBaseUrl().replace(/\/+$/, '');
+    return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+  },
+  // Assets
   async getAssets(): Promise<Asset[]> {
-    const { data, error } = await supabase.from('assets').select('*').eq('is_active', true);
-    if (error) throw error;
-    return data.map(asset => ({
-      ...asset,
-      type_display: ASSET_TYPE_MAP[asset.asset_type] || asset.asset_type,
-      status: asset.is_active ? 'ACTIVE' : 'INACTIVE',
-      status_display: asset.is_active ? 'Ativo' : 'Inativo',
-    }));
+    const data = await apiFetch<AssetApi[]>('/assets');
+    return data.map(mapAsset);
   },
 
   async getAsset(id: string): Promise<Asset | null> {
-    const { data, error } = await supabase.from('assets').select('*').eq('id', id).single();
-    if (error) throw error;
-    return data ? {
-      ...data,
-      type_display: ASSET_TYPE_MAP[data.asset_type] || data.asset_type,
-      status: data.is_active ? 'ACTIVE' : 'INACTIVE',
-      status_display: data.is_active ? 'Ativo' : 'Inativo',
-    } : null;
+    const data = await apiFetch<AssetApi>(`/assets/${id}`);
+    return data ? mapAsset(data) : null;
   },
 
   async createAsset(assetData: Omit<AssetCreateData, 'name'>): Promise<Asset> {
-    const user = await getUser();
-
-    const insertPayload: Database['public']['Tables']['assets']['Insert'] = {
-      user_id: user.id,
+    const payload = {
       ticker: assetData.ticker,
       name: assetData.ticker,
       asset_type: assetData.type,
       sector: assetData.sector || null,
-      notes: assetData.notes || null,
     };
 
-    const { data, error } = await supabase
-      .from('assets')
-      .insert(insertPayload)
-      .select()
-      .single();
+    const data = await apiFetch<AssetApi>('/assets', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
 
-    if (error) throw error;
-    
-    return {
-      ...data,
-      type_display: ASSET_TYPE_MAP[data.asset_type] || data.asset_type,
-      status: data.is_active ? 'ACTIVE' : 'INACTIVE',
-      status_display: data.is_active ? 'Ativo' : 'Inativo',
-    };
+    return mapAsset(data);
   },
 
   async updateAsset(id: string, assetData: Partial<AssetCreateData>): Promise<Asset> {
-    const { data, error } = await supabase.from('assets').update(assetData).eq('id', id).select().single();
-    if (error) throw error;
-    return {
-      ...data,
-      type_display: ASSET_TYPE_MAP[data.asset_type] || data.asset_type,
-      status: data.is_active ? 'ACTIVE' : 'INACTIVE',
-      status_display: data.is_active ? 'Ativo' : 'Inativo',
-    };
+    const payload: Record<string, unknown> = {};
+    if (assetData.ticker) payload.ticker = assetData.ticker;
+    if (assetData.type) payload.asset_type = assetData.type;
+    if (assetData.sector !== undefined) payload.sector = assetData.sector;
+    if (assetData.name) payload.name = assetData.name;
+
+    const data = await apiFetch<AssetApi>(`/assets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    return mapAsset(data);
   },
 
   async deleteAsset(id: string): Promise<void> {
-    const { error } = await supabase.from('assets').update({ is_active: false }).eq('id', id);
-    if (error) throw error;
+    await apiFetch<void>(`/assets/${id}`, { method: 'DELETE' });
   },
 
+  // Transactions
   async getTransactions(assetId?: string): Promise<Transaction[]> {
-    let query = supabase.from('transactions').select('*, asset:assets(ticker)');
-    if (assetId) {
-      query = query.eq('asset_id', assetId);
-    }
-    const { data, error } = await query;
-    if (error) throw error;
-    return data.map(tx => ({
-      ...tx,
-      type: tx.transaction_type,
-      asset_ticker: (tx.asset as { ticker: string })?.ticker || 'N/A',
-      type_display: TRANSACTION_TYPE_MAP[tx.transaction_type] || tx.transaction_type,
-      total_amount: (tx.quantity * tx.unit_price + (tx.fees || 0)).toString(),
-    }));
+    const query = assetId ? `/transactions?asset_id=${encodeURIComponent(assetId)}` : '/transactions';
+    const [transactions, assets] = await Promise.all([
+      apiFetch<TransactionApi[]>(query),
+      apiFetch<AssetApi[]>('/assets'),
+    ]);
+    const tickerMap = new Map(assets.map((a) => [a.id, a.ticker]));
+    return transactions.map((tx) => mapTransaction(tx, tickerMap.get(tx.asset_id)));
   },
 
   async createTransaction(txData: TransactionCreateData): Promise<Transaction> {
-    const user = await getUser();
-    const { data, error } = await supabase.from('transactions').insert({
+    const payload = {
       asset_id: txData.asset,
       transaction_type: txData.type,
       quantity: parseFloat(txData.quantity),
       unit_price: parseFloat(txData.unit_price),
       fees: parseFloat(txData.fees) || 0,
       date: txData.date,
-      user_id: user.id,
-    }).select('*, asset:assets(ticker)').single();
-
-    if (error) throw error;
-    return {
-      ...data,
-      type: data.transaction_type,
-      asset_ticker: (data.asset as { ticker: string })?.ticker || 'N/A',
-      type_display: TRANSACTION_TYPE_MAP[data.transaction_type] || data.transaction_type,
-      total_amount: (data.quantity * data.unit_price + (data.fees || 0)).toString(),
     };
+
+    const data = await apiFetch<TransactionApi>('/transactions', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    let ticker: string | undefined;
+    try {
+      const asset = await apiFetch<AssetApi>(`/assets/${data.asset_id}`);
+      ticker = asset.ticker;
+    } catch (_) {
+      ticker = undefined;
+    }
+
+    return mapTransaction(data, ticker);
   },
 
   async updateTransaction(id: string, txData: Partial<TransactionCreateData>): Promise<Transaction> {
-    const updatePayload: Partial<Database['public']['Tables']['transactions']['Update']> = {};
-    
-    if (txData.date) updatePayload.date = txData.date;
-    if (txData.quantity) updatePayload.quantity = parseFloat(txData.quantity);
-    if (txData.unit_price) updatePayload.unit_price = parseFloat(txData.unit_price);
-    if (txData.fees) updatePayload.fees = parseFloat(txData.fees);
-    if (txData.type) updatePayload.transaction_type = txData.type;
+    const payload: Record<string, unknown> = {};
+    if (txData.date) payload.date = txData.date;
+    if (txData.quantity) payload.quantity = parseFloat(txData.quantity);
+    if (txData.unit_price) payload.unit_price = parseFloat(txData.unit_price);
+    if (txData.fees) payload.fees = parseFloat(txData.fees);
+    if (txData.type) payload.transaction_type = txData.type;
+    if (txData.asset) payload.asset_id = txData.asset;
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .update(updatePayload)
-      .eq('id', id)
-      .select('*, asset:assets(ticker)')
-      .single();
+    const data = await apiFetch<TransactionApi>(`/transactions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
 
-    if (error) throw error;
+    let ticker: string | undefined;
+    try {
+      const asset = await apiFetch<AssetApi>(`/assets/${data.asset_id}`);
+      ticker = asset.ticker;
+    } catch (_) {
+      ticker = undefined;
+    }
 
-    return {
-      ...data,
-      type: data.transaction_type,
-      asset_ticker: (data.asset as { ticker: string })?.ticker || 'N/A',
-      type_display: TRANSACTION_TYPE_MAP[data.transaction_type] || data.transaction_type,
-      total_amount: (data.quantity * data.unit_price + (data.fees || 0)).toString(),
-    };
+    return mapTransaction(data, ticker);
   },
 
   async deleteTransaction(id: string): Promise<void> {
-    const { error } = await supabase.from('transactions').delete().eq('id', id);
-    if (error) throw error;
+    await apiFetch<void>(`/transactions/${id}`, { method: 'DELETE' });
   },
 
   async getPortfolioSummary(): Promise<PortfolioSummary> {
-    const { data: summary, error: summaryError } = await supabase.from('portfolio_summary').select('*').single();
-    if (summaryError) throw summaryError;
+    const [summary, allocation] = await Promise.all([
+      apiFetch<PortfolioSummaryApi>('/dashboard/summary'),
+      apiFetch<AllocationResponse>('/dashboard/allocation'),
+    ]);
 
-    const { data: allocation, error: allocationError } = await supabase.from('portfolio_allocation').select('*');
-    if (allocationError) throw allocationError;
-
-    const allocation_by_type = allocation.reduce((acc, item) => {
-      if (item.asset_type) {
-        acc[item.asset_type] = item.percentage;
-      }
+    const allocation_by_type = allocation.items.reduce((acc, item) => {
+      acc[item.asset_type] = toNumber(item.percentage);
       return acc;
-    }, {} as Record<string, number | null>);
+    }, {} as Record<string, number>);
 
     return {
       assets_count: summary?.total_assets || 0,
-      total_invested: summary?.total_invested || 0,
-      current_value: summary?.total_invested || 0,
+      total_invested: toNumber(summary?.total_invested),
+      current_value: toNumber(summary?.total_invested),
       profit_loss: '0',
       profit_loss_percent: '0',
       allocation_by_type,
     };
   },
-  
-  async getTransaction(id: string): Promise<Transaction | null> { 
-    const { data, error } = await supabase.from('transactions').select('*, asset:assets(ticker)').eq('id', id).single();
-    if (error) throw error;
-    return data ? {
-      ...data,
-      type: data.transaction_type,
-      asset_ticker: (data.asset as { ticker: string })?.ticker || 'N/A',
-      type_display: TRANSACTION_TYPE_MAP[data.transaction_type] || data.transaction_type,
-      total_amount: (data.quantity * data.unit_price + (data.fees || 0)).toString(),
-    } : null;
+
+  async getTransaction(id: string): Promise<Transaction | null> {
+    const data = await apiFetch<TransactionApi>(`/transactions/${id}`);
+    return data ? mapTransaction(data) : null;
   },
-  
-  async getAssetSummary(id: string): Promise<AssetSummary> { return {}; },
+
+  async getAssetSummary(_id: string): Promise<AssetSummary> {
+    return {};
+  },
 
   // Profile Methods
   async getProfile(): Promise<Profile> {
-    const user = await getUser();
-
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
-      throw error;
-    }
-
-    if (profile) {
-      return profile;
-    }
-
-    // Profile not found, create it (lazy creation)
-    const { data: newProfile, error: insertError } = await supabase
-      .from('profiles')
-      .insert({
-        id: user.id,
-        email: user.email!,
-        full_name: user.user_metadata?.full_name || '',
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      throw insertError;
-    }
-    return newProfile!;
+    const profile = await apiFetch<Profile>('/profile/me');
+    return { ...profile, avatar_url: apiClient.normalizeMediaUrl(profile.avatar_url) };
   },
 
   async updateProfile(profileData: ProfileUpdateData): Promise<Profile> {
-    const user = await getUser();
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert({ 
-        id: user.id, 
-        email: user.email!, // Always include email for inserts
-        ...profileData 
-      })
-      .select()
-      .single();
-      
-    if (error) throw error;
-    return data;
+    const payload: Record<string, unknown> = {};
+    if (profileData.full_name !== undefined) payload.full_name = profileData.full_name;
+    if (profileData.avatar_url !== undefined) payload.avatar_url = profileData.avatar_url;
+    if (profileData.cpf !== undefined) payload.cpf = profileData.cpf;
+    if (profileData.phone !== undefined) payload.phone = profileData.phone;
+    if (profileData.birth_date !== undefined) payload.birth_date = profileData.birth_date;
+
+    const data = await apiFetch<Profile>('/profile/me', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    return { ...data, avatar_url: apiClient.normalizeMediaUrl(data.avatar_url) };
   },
 
   async uploadAvatar(file: File): Promise<string> {
-    const user = await getUser();
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${user.id}-${Date.now()}.${fileExt}`;
+    const formData = new FormData();
+    formData.append('file', file);
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true });
+    const data = await apiFetch<{ avatar_url: string }>('/profile/me/avatar', {
+      method: 'POST',
+      body: formData,
+    });
 
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-    return data.publicUrl;
+    return apiClient.normalizeMediaUrl(data.avatar_url) || data.avatar_url;
   },
 
   // Suggestions Methods
   async getSuggestions(): Promise<Suggestion[]> {
-    const { data, error } = await supabase
-      .from('suggestions')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
+    return apiFetch<Suggestion[]>('/suggestions');
   },
 
   async createSuggestion(suggestionData: SuggestionCreateData): Promise<Suggestion> {
-    const user = await getUser();
-    const { data, error } = await supabase
-      .from('suggestions')
-      .insert({ ...suggestionData, user_id: user.id })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return apiFetch<Suggestion>('/suggestions', {
+      method: 'POST',
+      body: JSON.stringify(suggestionData),
+    });
   },
 
   async addVoteToSuggestion(suggestionId: string): Promise<void> {
-    const { error } = await supabase.rpc('increment_suggestion_votes', {
-      suggestion_id: suggestionId,
-    });
-    if (error) throw error;
+    await apiFetch<void>(`/suggestions/${suggestionId}/vote`, { method: 'POST' });
   },
 };
 

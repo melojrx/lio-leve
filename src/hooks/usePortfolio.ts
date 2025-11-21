@@ -12,6 +12,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, AssetCreateData, TransactionCreateData } from '@/lib/api';
 import { toast } from 'sonner';
 
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Ocorreu um erro inesperado');
+
 // ============================================
 // Query Keys (for cache management)
 // ============================================
@@ -78,8 +80,8 @@ export function useCreateAsset() {
 
       toast.success(`Ativo ${newAsset.ticker} adicionado com sucesso!`);
     },
-    onError: (error: any) => {
-      const message = error.message || 'Erro ao criar ativo';
+    onError: (error: unknown) => {
+      const message = getErrorMessage(error) || 'Erro ao criar ativo';
       toast.error(message);
     },
   });
@@ -101,8 +103,8 @@ export function useUpdateAsset() {
 
       toast.success('Ativo atualizado com sucesso!');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erro ao atualizar ativo');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error) || 'Erro ao atualizar ativo');
     },
   });
 }
@@ -123,8 +125,8 @@ export function useDeleteAsset() {
 
       toast.success('Ativo removido com sucesso!');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erro ao deletar ativo');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error) || 'Erro ao deletar ativo');
     },
   });
 }
@@ -176,8 +178,8 @@ export function useCreateTransaction() {
 
       toast.success('Transação registrada com sucesso!');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erro ao criar transação');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error) || 'Erro ao criar transação');
     },
   });
 }
@@ -201,8 +203,8 @@ export function useUpdateTransaction() {
 
       toast.success('Transação atualizada com sucesso!');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erro ao atualizar transação');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error) || 'Erro ao atualizar transação');
     },
   });
 }
@@ -222,8 +224,8 @@ export function useDeleteTransaction() {
 
       toast.success('Transação removida com sucesso!');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erro ao deletar transação');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error) || 'Erro ao deletar transação');
     },
   });
 }

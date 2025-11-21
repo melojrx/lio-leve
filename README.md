@@ -1,193 +1,64 @@
-<div align="center">
-	<img src="docs/assets/logo.svg" alt="Logo investorion" height="72" />
-	<h1>🚀 Investiorion.com.br - Plataforma de Investimentos</h1>
-	<p>Plataforma 100% gratuita para acompanhamento de carteiras de investimento com dados governamentais em primeira mão.</p>
-</div>
+# investiorion.com.br — Plataforma de Investimentos
 
----
+Aplicação moderna para acompanhamento de carteiras, sugestões de produto e cotações. Monorepo com frontend React/Vite e backend FastAPI posicionado para produção via Docker.
 
-## 📊 Stack Tecnológica
+## Stack Atual
+- **Frontend**: React 18 + TypeScript, Vite, Tailwind + shadcn/ui, React Router, TanStack Query, clsx/tailwind-merge.
+- **Backend**: FastAPI + SQLAlchemy, Alembic (PostgreSQL), autenticação JWT, Celery/Redis para jobs (cotações).
+- **Infra/Dev**: Docker Compose (db, redis, api, worker, web), ESLint/Tailwind plugins, Node 18+ (recomendado 20).
+- **Docs**: `docs/supabase-schema.sql` mantém paridade com o esquema original do Supabase; o backend já usa SQLAlchemy/Alembic.
 
-### Frontend
-- **React 18** + TypeScript
-- **Vite** (build tool)
-- **Tailwind CSS** + shadcn/ui (UI components)
-- **React Query** (TanStack Query)
-- **React Router** (navegação)
+## Estrutura de Pastas
+- `src/` — Vite + React. `components/ui` (shadcn), `components/layout` (Header/Footer/AppShell), `pages` (rotas), `hooks`/`contexts` (estado global), `lib` (API/http/config).
+- `api/` — FastAPI. `app/api/v1` (rotas), `app/models` (SQLAlchemy), `alembic/versions` (migrações), `app/worker` (Celery).
+- `docker/` — Dockerfile do web/Nginx.
+- `docs/` — schema SQL, materiais de apoio.
 
-### Backend (Supabase)
-- **PostgreSQL** (database)
-- **Supabase Auth** (autenticação)
-- **Row Level Security** (segurança)
-- **Edge Functions** (serverless)
-- **Storage** (arquivos)
-
-### Deploy
-- **Vercel** (frontend)
-- **Supabase Cloud** (backend)
-
----
-
-## 🏗️ Status do Projeto
-
-### ✅ Implementado
-- [x] UI completa (componentes shadcn/ui)
-- [x] Páginas: Dashboard, Portfolio, Transactions, Mercado
-- [x] Layout responsivo
-- [x] Estrutura de rotas
-
-### 🔄 Em Implementação (via Dyad)
-- [ ] Integração Supabase Auth
-- [ ] CRUD de Assets
-- [ ] CRUD de Transações
-- [ ] Dashboard com métricas
-- [ ] Cotações em tempo real (Edge Functions)
-- [ ] Sistema de blog
-- [ ] Deploy Vercel
-
----
-
-## 🚀 Pré-requisitos
-
-1. **Node.js** 18+ instalado
-2. **Projeto Supabase** criado (ver instruções abaixo)
-3. **Conta Vercel** (para deploy)
-
----
-
-## 📝 Setup do Banco de Dados (Supabase)
-
-### Passo 1: Criar Projeto Supabase
-
-1. Acesse: https://supabase.com/dashboard
-2. Clique em **"New Project"**
-3. Preencha:
-   - **Name**: `investorion-mvp`
-   - **Database Password**: Gere uma senha forte
-   - **Region**: `South America (São Paulo)` ⚠️ IMPORTANTE para latência
-   - **Pricing Plan**: Free
-4. Clique em **"Create new project"**
-5. Aguarde ~2 minutos (criação do banco)
-
-### Passo 2: Copiar Credenciais
-
-1. No dashboard do projeto, vá em **Settings** → **API**
-2. Copie:
-   - **Project URL** (ex: `https://xxxxxxxxxxx.supabase.co`)
-   - **anon public** key (começa com `eyJ...`)
-3. Cole no arquivo `.env.local`:
-
+## Como Rodar (Docker Compose)
 ```bash
-VITE_SUPABASE_URL=https://seu-projeto-aqui.supabase.co
-VITE_SUPABASE_ANON_KEY=sua-anon-key-aqui
+# dev com hot reload (usa docker-compose + override dev)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+# aplicar migrações
+docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm api alembic upgrade head
 ```
+Serviços principais: API em `http://localhost:8000` (docs em `/docs`), frontend dev em `http://localhost:5173`, PostgreSQL em `5432`, Redis em `6379`.
 
-### Passo 3: Criar Tabelas (SQL Editor)
-
-1. No dashboard Supabase, vá em **SQL Editor**
-2. Clique em **"New query"**
-3. Copie e cole o SQL completo do arquivo: `docs/supabase-schema.sql`
-4. Clique em **"Run"** (ícone de play)
-5. ✅ Verifique se apareceu "Success" (sem erros)
-
-### Passo 4: Verificar Tabelas Criadas
-
-1. No dashboard, vá em **Table Editor**
-2. Você deve ver as tabelas:
-   - `profiles`
-   - `assets`
-   - `transactions`
-   - `blog_posts`
-
-### Passo 5: Configurar Auth Providers (Opcional)
-
-1. Vá em **Authentication** → **Providers**
-2. Habilite:
-   - ✅ **Email** (já vem habilitado)
-   - [ ] **Google** (opcional)
-   - [ ] **GitHub** (opcional)
-3. Configure URLs permitidas em **Authentication** → **URL Configuration**:
-   - **Site URL**: `http://localhost:5173` (dev)
-   - **Redirect URLs**: 
-     - `http://localhost:5173/**`
-     - `https://seu-dominio.vercel.app/**` (produção)
-
----
-
-## 💻 Desenvolvimento Local
-
+## Como Rodar Localmente (sem Docker)
+Frontend:
 ```bash
-# 1. Instalar dependências
 npm install
-
-# 2. Criar .env.local com credenciais Supabase
-# (copie de .env.example e preencha)
-
-# 3. Rodar servidor dev
-npm run dev
-
-# 4. Abrir no browser
-# http://localhost:5173
+cp .env.example .env         # ajuste VITE_API_URL se necessário
+npm run dev                  # http://localhost:5173
 ```
-
----
-
-## 🎨 Estrutura de Componentes UI
-
-O projeto usa **shadcn/ui** com os seguintes componentes já instalados:
-
-- `Button` - Botões
-- `Card` - Cards
-- `Input` - Inputs de formulário
-- `Label` - Labels
-- `Select` - Dropdowns
-- `Dialog` - Modais
-- `Alert` - Alertas
-- `Loader` - Loading states
-- E muitos outros...
-
-Todos os componentes estão em `src/components/ui/`.
-
----
-
-## 📦 Próximos Passos (Com Dyad)
-
-### 1. Instalar Supabase Client
+Backend:
 ```bash
-npm install @supabase/supabase-js @supabase/auth-ui-react
+cd api
+python3 -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip && pip install -e .[dev]
+cp .env.docker.example .env  # edite DATABASE_URL, SECRET_KEY, CORS_ORIGINS etc.
+alembic upgrade head
+uvicorn app.main:app --reload  # http://localhost:8000
 ```
+Worker (opcional em local): `celery -A app.worker.celery_app worker -l info --pool solo`.
 
-### 2. Implementar Features
-- [ ] AuthContext com Supabase
-- [ ] CRUD de Assets (hooks + UI)
-- [ ] CRUD de Transações
-- [ ] Dashboard com métricas
-- [ ] Cotações (Edge Function)
-- [ ] Blog público
+## Variáveis de Ambiente Essenciais
+- Frontend (`.env`): `VITE_API_URL` (ex.: `http://localhost:8000`), `VITE_APP_NAME`, `VITE_SUPABASE_URL/ANON_KEY` só se usar o schema legado.
+- Backend (`api/.env` ou `.env.docker`): `DATABASE_URL`, `SECRET_KEY`, `CORS_ORIGINS` (lista separada por vírgula), `ACCESS_TOKEN_EXPIRE_MINUTES`, `REFRESH_TOKEN_EXPIRE_MINUTES`, `FIRST_SUPERUSER_EMAIL/FIRST_SUPERUSER_PASSWORD`, `BROKER_URL/RESULT_BACKEND` (Redis), `MEDIA_ROOT/MEDIA_URL` se customizar uploads.
 
-### 3. Deploy
-- [ ] Conectar GitHub ao Vercel
-- [ ] Configurar variáveis de ambiente
-- [ ] Deploy automático
+## Rotina de Manutenção
+- Migrações: `alembic upgrade head` (crie novas em `api/alembic/versions`). Se usar Supabase, replique alterações em `docs/supabase-schema.sql`.
+- Lint/build frontend: `npm run lint`, `npm run build`, `npm run build:dev`.
+- Sugestões: endpoints em `/api/v1/suggestions` (POST cria, POST `/:id/vote` vota) já expostos ao frontend via React Query.
+- Logs/saúde: `/api/health` e `/api/v1/status`.
 
----
+## Testes/QA manual sugeridos
+- Autenticação: login, logout, recuperação/atualização de senha.
+- Carteira: CRUD de ativos e transações, cálculo de preço médio.
+- Dashboard/mercado: carregamento das métricas e cards.
+- Mural de sugestões: criar sugestão, votar uma única vez, listar ordenação por votos/recência.
+- Upload de avatar (media service) se configurado.
 
-## 🔗 Links Úteis
+## Contato
+Suporte: `suporte@orion.invest` • DPO: `dpo@investorion.com.br`
 
-- **Supabase Dashboard**: https://supabase.com/dashboard
-- **Supabase Docs**: https://supabase.com/docs
-- **Vercel Dashboard**: https://vercel.com/dashboard
-- **shadcn/ui**: https://ui.shadcn.com
-
----
-
-## 📄 Licença
-
-MIT
-
----
-
-## 👨‍💻 Autor
-
-Júnior Melo - Economista | Engenheiro de Dados | MGI  
-[LinkedIn](https://www.linkedin.com/in/j%C3%BAnior-melo-a4817127/) | [GitHub](https://github.com/melojrx)

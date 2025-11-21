@@ -3,33 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LineChart, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 const UpdatePassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { updatePassword } = useAuth();
+  const resetToken = searchParams.get("token") || sessionStorage.getItem("investorion.reset_token") || "";
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        // The user is in the password recovery flow
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,11 +33,20 @@ const UpdatePassword = () => {
     setLoading(true);
     setError(null);
 
+    if (!resetToken) {
+      toast.error("Link inválido ou expirado.", {
+        description: "Solicite um novo link de redefinição.",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
-      await updatePassword(password);
+      await updatePassword(password, { resetToken });
       toast.success("Senha atualizada!", {
         description: "Você já pode fazer login com sua nova senha.",
       });
+      sessionStorage.removeItem("investorion.reset_token");
       navigate("/login");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido.";
@@ -63,7 +61,7 @@ const UpdatePassword = () => {
 
   return (
     <div className="min-h-screen bg-background dark:bg-slate-950">
-      <SEO title="Atualizar Senha — investorion.com.br" description="Defina uma nova senha para sua conta." />
+      <SEO title="Atualizar Senha — investiorion.com.br" description="Defina uma nova senha para sua conta." />
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* Left side - Branding */}
         <div className="hidden lg:flex items-center justify-center bg-slate-950 text-white relative overflow-hidden">
@@ -74,7 +72,7 @@ const UpdatePassword = () => {
                 <LineChart className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-white">investorion.com.br</h1>
+                <h1 className="text-4xl font-bold text-white">investiorion.com.br</h1>
                 <p className="text-slate-400 text-lg">as a lifestyle</p>
               </div>
             </div>

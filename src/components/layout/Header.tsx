@@ -27,7 +27,7 @@ const Header = () => {
             <BrandLogo size={20} className="text-primary" />
           </div>
           <span className="font-semibold tracking-tight text-sm sm:text-base">
-            investorion.com.br
+            investiorion.com.br
           </span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm">

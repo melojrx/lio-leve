@@ -1,6 +1,14 @@
 # Dependencies
 node_modules/
 
+# Python / API
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+api/.venv/
+
 # Build
 dist/
 dist-ssr/
@@ -11,6 +19,9 @@ dist-ssr/
 .env
 .env.local
 .env.production
+api/.env
+api/.env.local
+api/.env.docker
 
 # IDE
 .vscode/
