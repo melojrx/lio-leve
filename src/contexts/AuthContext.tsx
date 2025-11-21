@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
 import { apiClient, Profile } from '@/lib/api';
 import { apiFetch, clearTokens, getStoredTokens, saveTokens } from '@/lib/http';
